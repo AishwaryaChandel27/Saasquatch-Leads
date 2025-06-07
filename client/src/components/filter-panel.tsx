@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Filter, Star, Building, Clock, MapPin, Briefcase, ExternalLink, Globe, Users, DollarSign } from "lucide-react";
+import { Search, Filter, Star, Building, Clock, MapPin, Briefcase, ExternalLink, Globe, Users, DollarSign, Calendar, Code, TrendingUp, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";

@@ -7,6 +7,7 @@ import { generateCompanyInsights, generateOutreachEmail } from "./lib/openai";
 import { calculateLeadScore, enrichLeadData, updateLeadPriority } from "./lib/leadScoring";
 import { calculateMLScore, classifyLeadQuality } from "./lib/mlScoring";
 import { enrichCompanyByDomain, searchLinkedInCompany, getCrunchbaseFunding } from "./lib/realWorldEnrichment";
+import { enrichCompanyWithClearbit, calculateClearbitScore, categorizeClearbitPriority } from "./lib/clearbit";
 import { 
   prospectFromGitHub,
   prospectFromYCombinator, 
@@ -214,7 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company search endpoint for detailed company information
+  // Company search endpoint with Clearbit integration for comprehensive data
   app.post("/api/companies/search", async (req, res) => {
     try {
       const { companyName } = req.body;
@@ -225,12 +226,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Searching for company: ${companyName}`);
       
-      // Check if company exists in our leads database first
+      // First check existing leads database
       const existingLead = (await storage.getLeads()).find(
         lead => lead.companyName.toLowerCase().includes(companyName.toLowerCase())
       );
 
       if (existingLead) {
+        // Try to enhance with Clearbit data
+        const clearbitData = await enrichCompanyWithClearbit(existingLead.companyName);
+        
+        if (clearbitData) {
+          const clearbitScore = calculateClearbitScore(clearbitData);
+          const clearbitPriority = categorizeClearbitPriority(clearbitScore);
+          
+          return res.json({
+            companyName: clearbitData.name,
+            domain: clearbitData.domain,
+            industry: clearbitData.category?.industry || existingLead.industry,
+            sector: clearbitData.category?.sector,
+            industryGroup: clearbitData.category?.industryGroup,
+            description: clearbitData.description,
+            foundedYear: clearbitData.foundedYear,
+            location: clearbitData.location || existingLead.location,
+            logo: clearbitData.logo,
+            website: `https://${clearbitData.domain}`,
+            phone: clearbitData.phone,
+            
+            // Social media and online presence
+            linkedinUrl: clearbitData.linkedin?.handle ? `https://linkedin.com/company/${clearbitData.linkedin.handle}` : null,
+            twitterUrl: clearbitData.twitter?.handle ? `https://twitter.com/${clearbitData.twitter.handle}` : null,
+            facebookUrl: clearbitData.facebook?.handle ? `https://facebook.com/${clearbitData.facebook.handle}` : null,
+            crunchbaseUrl: clearbitData.crunchbase?.handle ? `https://crunchbase.com/organization/${clearbitData.crunchbase.handle}` : null,
+            
+            // Company metrics
+            employeeCount: clearbitData.metrics?.employees || existingLead.employeeCount,
+            employeesRange: clearbitData.metrics?.employeesRange,
+            marketCap: clearbitData.metrics?.marketCap,
+            annualRevenue: clearbitData.metrics?.annualRevenue,
+            totalFunding: clearbitData.metrics?.raised,
+            
+            // Tech stack and categories
+            techStack: clearbitData.tech || existingLead.techStack,
+            techCategories: clearbitData.techCategories,
+            
+            // Scoring
+            score: clearbitScore,
+            priority: clearbitPriority,
+            mlScore: existingLead.score,
+            mlPriority: existingLead.priority,
+            
+            // Enriched insights
+            aiInsights: {
+              summary: `${clearbitData.name} is a ${clearbitData.category?.industry || 'technology'} company founded in ${clearbitData.foundedYear} with ${clearbitData.metrics?.employees || 'unknown'} employees. Clearbit score: ${clearbitScore}/100.`,
+              keyInsights: [
+                `Industry: ${clearbitData.category?.industry || 'Not specified'}`,
+                `Founded: ${clearbitData.foundedYear || 'Unknown'}`,
+                `Employees: ${clearbitData.metrics?.employees || 'Not specified'}`,
+                `Location: ${clearbitData.location || 'Not specified'}`,
+                `Revenue: ${clearbitData.metrics?.annualRevenue ? `$${(clearbitData.metrics.annualRevenue / 1000000).toFixed(1)}M` : 'Not disclosed'}`,
+                `Funding: ${clearbitData.metrics?.raised ? `$${(clearbitData.metrics.raised / 1000000).toFixed(1)}M` : 'Not disclosed'}`,
+                `Tech Stack: ${clearbitData.tech?.length || 0} technologies`
+              ],
+              recommendedApproach: `High-value ${clearbitPriority} priority prospect. Focus on ${clearbitData.category?.industry || 'technology'} solutions with ${clearbitData.metrics?.employees || 'company size'} employee company scale.`
+            }
+          });
+        }
+        
+        // Fallback to existing lead data if Clearbit fails
         return res.json({
           companyName: existingLead.companyName,
           industry: existingLead.industry,
@@ -241,29 +303,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
           techStack: existingLead.techStack,
           score: existingLead.score,
           priority: existingLead.priority,
-          description: `${existingLead.companyName} is a ${existingLead.industry} company with ${existingLead.employeeCount} employees in ${existingLead.location}. Current ML score: ${existingLead.score}/100 indicating ${existingLead.priority} priority potential.`,
-          aiInsights: existingLead.aiInsights || {
+          description: `${existingLead.companyName} is a ${existingLead.industry} company with ${existingLead.employeeCount} employees in ${existingLead.location}.`,
+          aiInsights: {
             summary: `${existingLead.companyName} shows strong potential with ${existingLead.score}/100 ML score`,
             keyInsights: [
               `Industry: ${existingLead.industry}`,
               `Employee Count: ${existingLead.employeeCount}`,
-              `Funding Stage: ${existingLead.fundingInfo}`,
-              `Priority Level: ${existingLead.priority.toUpperCase()}`
+              `Funding: ${existingLead.fundingInfo}`,
+              `Priority: ${existingLead.priority.toUpperCase()}`
             ],
             recommendedApproach: `Target ${existingLead.priority} priority outreach focused on ${existingLead.industry} solutions`
           }
         });
       }
 
-      // If not found, return not found with helpful message
+      // If not in database, try direct Clearbit search
+      const clearbitData = await enrichCompanyWithClearbit(companyName);
+      
+      if (clearbitData) {
+        const clearbitScore = calculateClearbitScore(clearbitData);
+        const clearbitPriority = categorizeClearbitPriority(clearbitScore);
+        
+        return res.json({
+          companyName: clearbitData.name,
+          domain: clearbitData.domain,
+          industry: clearbitData.category?.industry,
+          sector: clearbitData.category?.sector,
+          industryGroup: clearbitData.category?.industryGroup,
+          description: clearbitData.description,
+          foundedYear: clearbitData.foundedYear,
+          location: clearbitData.location,
+          logo: clearbitData.logo,
+          website: `https://${clearbitData.domain}`,
+          phone: clearbitData.phone,
+          
+          // Social media and online presence
+          linkedinUrl: clearbitData.linkedin?.handle ? `https://linkedin.com/company/${clearbitData.linkedin.handle}` : null,
+          twitterUrl: clearbitData.twitter?.handle ? `https://twitter.com/${clearbitData.twitter.handle}` : null,
+          facebookUrl: clearbitData.facebook?.handle ? `https://facebook.com/${clearbitData.facebook.handle}` : null,
+          crunchbaseUrl: clearbitData.crunchbase?.handle ? `https://crunchbase.com/organization/${clearbitData.crunchbase.handle}` : null,
+          
+          // Company metrics
+          employeeCount: clearbitData.metrics?.employees,
+          employeesRange: clearbitData.metrics?.employeesRange,
+          marketCap: clearbitData.metrics?.marketCap,
+          annualRevenue: clearbitData.metrics?.annualRevenue,
+          totalFunding: clearbitData.metrics?.raised,
+          
+          // Tech stack and categories
+          techStack: clearbitData.tech,
+          techCategories: clearbitData.techCategories,
+          
+          // Scoring
+          score: clearbitScore,
+          priority: clearbitPriority,
+          
+          // Enriched insights
+          aiInsights: {
+            summary: `${clearbitData.name} is a ${clearbitData.category?.industry || 'technology'} company founded in ${clearbitData.foundedYear} with ${clearbitData.metrics?.employees || 'unknown'} employees. Clearbit enrichment score: ${clearbitScore}/100.`,
+            keyInsights: [
+              `Industry: ${clearbitData.category?.industry || 'Not specified'}`,
+              `Founded: ${clearbitData.foundedYear || 'Unknown'}`,
+              `Employees: ${clearbitData.metrics?.employees || 'Not specified'}`,
+              `Location: ${clearbitData.location || 'Not specified'}`,
+              `Revenue: ${clearbitData.metrics?.annualRevenue ? `$${(clearbitData.metrics.annualRevenue / 1000000).toFixed(1)}M` : 'Not disclosed'}`,
+              `Funding: ${clearbitData.metrics?.raised ? `$${(clearbitData.metrics.raised / 1000000).toFixed(1)}M` : 'Not disclosed'}`,
+              `Tech Stack: ${clearbitData.tech?.length || 0} technologies identified`
+            ],
+            recommendedApproach: `New ${clearbitPriority} priority prospect identified via Clearbit. Strong potential for ${clearbitData.category?.industry || 'technology'} solutions.`
+          }
+        });
+      }
+
+      // If not found anywhere
       res.status(404).json({ 
-        message: "Company not found in current lead database",
-        suggestion: "Try prospecting new leads first, then search for specific companies"
+        message: "Company not found in Clearbit database or current leads",
+        suggestion: "Try searching for a well-known company like Stripe, Airbnb, or Uber"
       });
 
     } catch (error) {
       console.error("Company search error:", error);
-      res.status(500).json({ message: "Failed to search for company" });
+      res.status(500).json({ 
+        message: "Failed to search for company",
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   });
 
