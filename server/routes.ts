@@ -4,10 +4,12 @@ import { z } from "zod";
 import { storage } from "./storage";
 import { insertLeadSchema, updateLeadSchema } from "@shared/schema";
 import { generateCompanyInsights, generateOutreachEmail } from "./lib/openai";
-import { calculateLeadScore, enrichLeadData, updateLeadPriority } from "./lib/leadScoring";
+import { calculateLeadScore, updateLeadPriority } from "./lib/leadScoring";
 import { calculateMLScore, classifyLeadQuality } from "./lib/mlScoring";
 import { enrichCompanyByDomain, searchLinkedInCompany, getCrunchbaseFunding } from "./lib/realWorldEnrichment";
 import { enrichCompanyWithClearbit, calculateClearbitScore, categorizeClearbitPriority } from "./lib/clearbit";
+import { calculateAdvancedLeadScore, enrichLeadWithAdvancedScoring } from "./lib/advancedLeadScoring";
+import { enrichLeadData, calculateEnrichmentScore } from "./lib/leadEnrichment";
 import { 
   prospectFromGitHub,
   prospectFromYCombinator, 

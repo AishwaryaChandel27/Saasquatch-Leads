@@ -3,7 +3,7 @@ import { Header } from "@/components/header";
 import { StatsCards } from "@/components/stats-cards";
 
 import { LeadsList } from "@/components/leads-list";
-import { AIInsightsPanel } from "@/components/ai-insights-panel";
+import { LeadQualityAnalytics } from "@/components/lead-quality-analytics";
 import { LeadProspectingPanel } from "@/components/lead-prospecting-panel";
 import { useState } from "react";
 import type { Lead } from "@shared/schema";
@@ -54,8 +54,8 @@ export default function Dashboard() {
           </div>
           
           <div>
-            <AIInsightsPanel 
-              selectedLead={selectedLead}
+            <LeadQualityAnalytics 
+              lead={selectedLead}
             />
           </div>
         </div>
