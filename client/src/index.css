@@ -264,6 +264,62 @@
   .bg-gradient-warning {
     background: var(--gradient-warning);
   }
+
+  /* Large screen optimizations */
+  @media (min-width: 1536px) {
+    .container {
+      max-width: 1800px;
+    }
+  }
+
+  /* Ultra-wide screen enhancements */
+  @media (min-width: 1920px) {
+    .container {
+      max-width: 2000px;
+    }
+  }
+
+  /* Enhanced grid system for large screens */
+  .grid-cols-16 {
+    grid-template-columns: repeat(16, minmax(0, 1fr));
+  }
+
+  .col-span-10 {
+    grid-column: span 10 / span 10;
+  }
+
+  .col-span-6 {
+    grid-column: span 6 / span 6;
+  }
+
+  /* Professional spacing and alignment */
+  .section-spacing {
+    margin-bottom: clamp(1.5rem, 4vw, 3rem);
+  }
+
+  .gap-responsive {
+    gap: clamp(1rem, 3vw, 2.5rem);
+  }
+
+  /* Enhanced sticky positioning for large screens */
+  .sticky-enhanced {
+    position: sticky;
+    top: 6rem;
+    height: fit-content;
+    max-height: calc(100vh - 8rem);
+    overflow-y: auto;
+  }
+
+  /* Smooth transitions for premium feel */
+  .transition-premium {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Enhanced hover effects for large screens */
+  .hover-lift:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
 }
 
 /* Advanced Animations */

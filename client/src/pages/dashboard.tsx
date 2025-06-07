@@ -147,7 +147,7 @@ export default function Dashboard() {
     <div className="min-h-screen transition-colors">
       <Header />
       
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 max-w-7xl">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-6 lg:py-8 max-w-[1600px] 2xl:max-w-[1800px]">
         {/* Stats Cards Section */}
         <section className="mb-8">
           <StatsCards stats={stats} />
@@ -163,37 +163,39 @@ export default function Dashboard() {
           />
         </section>
         
-        {/* Main Content Grid */}
-        <section className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8">
-          {/* Leads List - Takes full width on mobile, 7 columns on xl screens */}
-          <div className="xl:col-span-7 order-1">
-            <LeadsList 
-              leads={filteredLeads || []}
-              isLoading={isLoading}
-              selectedLead={selectedLead}
-              onSelectLead={setSelectedLead}
-            />
-          </div>
-          
-          {/* Right Sidebar - Stack vertically on mobile, side by side on xl */}
-          <div className="xl:col-span-5 order-2 space-y-6">
-            {/* Scoring System Overview */}
-            <div className="w-full">
-              <ScoringQuickOverview />
-            </div>
-            
-            {/* Prospecting Panel */}
-            <div className="w-full">
-              <LeadProspectingPanel 
-                onLeadsProspected={() => {
-                  window.location.reload();
-                }}
+        {/* Main Content Grid - Optimized for large screens */}
+        <section className="grid grid-cols-1 lg:grid-cols-12 2xl:grid-cols-16 gap-6 lg:gap-8 2xl:gap-10">
+          {/* Leads List - Responsive width based on screen size */}
+          <div className="lg:col-span-8 2xl:col-span-10 order-1">
+            <div className="h-full">
+              <LeadsList 
+                leads={filteredLeads || []}
+                isLoading={isLoading}
+                selectedLead={selectedLead}
+                onSelectLead={setSelectedLead}
               />
             </div>
-            
-            {/* Analytics Panel */}
-            <div className="w-full">
-              <div className="xl:sticky xl:top-24">
+          </div>
+          
+          {/* Right Sidebar - Optimized spacing and sticky positioning */}
+          <div className="lg:col-span-4 2xl:col-span-6 order-2">
+            <div className="lg:sticky lg:top-24 space-y-6 h-fit">
+              {/* Scoring System Overview - Enhanced for large screens */}
+              <div className="transform transition-all duration-300 hover:scale-[1.02]">
+                <ScoringQuickOverview />
+              </div>
+              
+              {/* Prospecting Panel - Enhanced interaction */}
+              <div className="transform transition-all duration-300 hover:scale-[1.02]">
+                <LeadProspectingPanel 
+                  onLeadsProspected={() => {
+                    window.location.reload();
+                  }}
+                />
+              </div>
+              
+              {/* Analytics Panel - Conditional sticky behavior */}
+              <div className="transform transition-all duration-300 hover:scale-[1.02]">
                 <LeadQualityAnalytics 
                   lead={selectedLead}
                 />
