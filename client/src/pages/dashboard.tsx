@@ -6,6 +6,7 @@ import { LeadQualityAnalytics } from "@/components/lead-quality-analytics";
 import { LeadProspectingPanel } from "@/components/lead-prospecting-panel";
 import { AdvancedFilters } from "@/components/advanced-filters";
 import { ScoringQuickOverview } from "@/components/scoring-quick-overview";
+import { LeadInsightsDashboard } from "@/components/lead-insights-dashboard";
 import { useState, useMemo } from "react";
 import type { Lead } from "@shared/schema";
 
@@ -196,8 +197,8 @@ export default function Dashboard() {
               
               {/* Analytics Panel - Conditional sticky behavior */}
               <div className="transform transition-all duration-300 hover:scale-[1.02]">
-                <LeadQualityAnalytics 
-                  lead={selectedLead}
+                <LeadInsightsDashboard 
+                  selectedLead={selectedLead}
                 />
               </div>
             </div>
