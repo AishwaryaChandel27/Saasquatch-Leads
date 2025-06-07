@@ -267,79 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Prospect leads from real data sources
-  app.post("/api/leads/prospect", async (req, res) => {
-    try {
-      const { source, industry, technology, limit = 10 } = req.body;
-      let leads = [];
-      
-      switch (source) {
-        case 'github':
-          leads = await prospectFromGitHub(limit);
-          break;
-        case 'ycombinator':
-          leads = await prospectFromYCombinator(limit);
-          break;
-        case 'technology':
-          if (!technology) {
-            return res.status(400).json({ message: "Technology parameter required for technology source" });
-          }
-          leads = await prospectByTechnology(technology, limit);
-          break;
-        default:
-          leads = await prospectMultipleSources(limit);
-      }
-      
-      // Store the leads and calculate scores
-      const storedLeads = [];
-      for (const leadData of leads) {
-        const lead = await storage.createLead(leadData);
-        const enrichedLead = enrichLeadData(lead);
-        await storage.updateLead(lead.id, enrichedLead);
-        storedLeads.push(enrichedLead);
-      }
-      
-      res.json({
-        message: `Successfully prospected ${storedLeads.length} leads from ${source || 'multiple sources'}`,
-        leads: storedLeads,
-        source,
-        count: storedLeads.length
-      });
-    } catch (error) {
-      console.error("Lead prospecting error:", error);
-      res.status(500).json({ message: "Failed to prospect leads from data sources" });
-    }
-  });
 
-  // Enrich existing leads with real-world data
-  app.post("/api/leads/enrich-all", async (req, res) => {
-    try {
-      const leads = await storage.getLeads();
-      let enrichedCount = 0;
-      
-      for (const lead of leads) {
-        if (!lead.isEnriched) {
-          // Recalculate and update lead score
-          const enrichedLead = enrichLeadData(lead);
-          await storage.updateLead(lead.id, {
-            score: enrichedLead.score,
-            priority: enrichedLead.priority,
-            isEnriched: true
-          });
-          enrichedCount++;
-        }
-      }
-      
-      res.json({
-        message: `Successfully enriched ${enrichedCount} leads with updated scoring`,
-        enrichedCount,
-        totalLeads: leads.length
-      });
-    } catch (error) {
-      console.error("Lead enrichment error:", error);
-      res.status(500).json({ message: "Failed to enrich leads" });
-    }
-  });
 
   // Prospect leads from real data sources (must come before :id route)
   app.post("/api/leads/prospect", async (req, res) => {
