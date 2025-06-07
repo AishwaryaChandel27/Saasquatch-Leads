@@ -214,6 +214,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Company search endpoint for detailed company information
+  app.post("/api/companies/search", async (req, res) => {
+    try {
+      const { companyName } = req.body;
+      
+      if (!companyName) {
+        return res.status(400).json({ message: "Company name is required" });
+      }
+
+      console.log(`Searching for company: ${companyName}`);
+      
+      // Check if company exists in our leads database first
+      const existingLead = (await storage.getLeads()).find(
+        lead => lead.companyName.toLowerCase().includes(companyName.toLowerCase())
+      );
+
+      if (existingLead) {
+        return res.json({
+          companyName: existingLead.companyName,
+          industry: existingLead.industry,
+          location: existingLead.location,
+          website: existingLead.website,
+          employeeCount: existingLead.employeeCount,
+          fundingInfo: existingLead.fundingInfo,
+          techStack: existingLead.techStack,
+          score: existingLead.score,
+          priority: existingLead.priority,
+          description: `${existingLead.companyName} is a ${existingLead.industry} company with ${existingLead.employeeCount} employees in ${existingLead.location}. Current ML score: ${existingLead.score}/100 indicating ${existingLead.priority} priority potential.`,
+          aiInsights: existingLead.aiInsights || {
+            summary: `${existingLead.companyName} shows strong potential with ${existingLead.score}/100 ML score`,
+            keyInsights: [
+              `Industry: ${existingLead.industry}`,
+              `Employee Count: ${existingLead.employeeCount}`,
+              `Funding Stage: ${existingLead.fundingInfo}`,
+              `Priority Level: ${existingLead.priority.toUpperCase()}`
+            ],
+            recommendedApproach: `Target ${existingLead.priority} priority outreach focused on ${existingLead.industry} solutions`
+          }
+        });
+      }
+
+      // If not found, return not found with helpful message
+      res.status(404).json({ 
+        message: "Company not found in current lead database",
+        suggestion: "Try prospecting new leads first, then search for specific companies"
+      });
+
+    } catch (error) {
+      console.error("Company search error:", error);
+      res.status(500).json({ message: "Failed to search for company" });
+    }
+  });
+
   // Export leads to CSV
   app.get("/api/leads/export/csv", async (req, res) => {
     try {

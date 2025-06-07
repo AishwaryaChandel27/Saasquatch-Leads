@@ -178,6 +178,147 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
               <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
             </div>
             
+            {/* Company Details Search */}
+            <div className="flex space-x-2">
+              <div className="relative">
+                <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <Input
+                  placeholder="Get company details..."
+                  value={companySearch}
+                  onChange={(e) => setCompanySearch(e.target.value)}
+                  className="pl-10 w-48"
+                  onKeyPress={(e) => e.key === 'Enter' && handleCompanySearch()}
+                />
+              </div>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={handleCompanySearch}
+                    disabled={companySearchMutation.isPending}
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0"
+                  >
+                    {companySearchMutation.isPending ? (
+                      <div className="w-4 h-4 border-2 border-slate-600 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Search className="w-4 h-4" />
+                    )}
+                    Search
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center space-x-2">
+                      <Building className="w-5 h-5" />
+                      <span>Company Details</span>
+                    </DialogTitle>
+                  </DialogHeader>
+                  {companyDetails && (
+                    <div className="space-y-6 pt-4">
+                      {/* Company Header */}
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="text-xl font-semibold">{companyDetails.companyName}</h3>
+                          <p className="text-slate-600">{companyDetails.industry}</p>
+                        </div>
+                        {companyDetails.website && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={companyDetails.website} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="w-4 h-4 mr-1" />
+                              Visit
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Key Metrics */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {companyDetails.employeeCount && (
+                          <div className="flex items-center space-x-2 p-3 bg-slate-50 rounded-lg">
+                            <Users className="w-4 h-4 text-slate-600" />
+                            <div>
+                              <div className="text-sm font-medium">{companyDetails.employeeCount}</div>
+                              <div className="text-xs text-slate-500">Employees</div>
+                            </div>
+                          </div>
+                        )}
+                        {companyDetails.fundingInfo && (
+                          <div className="flex items-center space-x-2 p-3 bg-slate-50 rounded-lg">
+                            <DollarSign className="w-4 h-4 text-slate-600" />
+                            <div>
+                              <div className="text-sm font-medium">{companyDetails.fundingInfo}</div>
+                              <div className="text-xs text-slate-500">Funding</div>
+                            </div>
+                          </div>
+                        )}
+                        {companyDetails.location && (
+                          <div className="flex items-center space-x-2 p-3 bg-slate-50 rounded-lg">
+                            <MapPin className="w-4 h-4 text-slate-600" />
+                            <div>
+                              <div className="text-sm font-medium">{companyDetails.location}</div>
+                              <div className="text-xs text-slate-500">Location</div>
+                            </div>
+                          </div>
+                        )}
+                        {companyDetails.score && (
+                          <div className="flex items-center space-x-2 p-3 bg-slate-50 rounded-lg">
+                            <Star className="w-4 h-4 text-slate-600" />
+                            <div>
+                              <div className="text-sm font-medium">{companyDetails.score}/100</div>
+                              <div className="text-xs text-slate-500">ML Score</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Description */}
+                      {companyDetails.description && (
+                        <div>
+                          <h4 className="font-medium mb-2">About</h4>
+                          <p className="text-slate-600 text-sm leading-relaxed">{companyDetails.description}</p>
+                        </div>
+                      )}
+
+                      {/* Tech Stack */}
+                      {companyDetails.techStack && companyDetails.techStack.length > 0 && (
+                        <div>
+                          <h4 className="font-medium mb-2">Tech Stack</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {companyDetails.techStack.map((tech: string, index: number) => (
+                              <Badge key={index} variant="outline">{tech}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* AI Insights */}
+                      {companyDetails.aiInsights && (
+                        <div>
+                          <h4 className="font-medium mb-2">AI Analysis</h4>
+                          <div className="space-y-3">
+                            <div className="p-3 bg-blue-50 rounded-lg">
+                              <p className="text-sm">{companyDetails.aiInsights.summary}</p>
+                            </div>
+                            {companyDetails.aiInsights.keyInsights && companyDetails.aiInsights.keyInsights.length > 0 && (
+                              <div>
+                                <h5 className="text-sm font-medium mb-1">Key Insights</h5>
+                                <ul className="text-sm text-slate-600 space-y-1">
+                                  {companyDetails.aiInsights.keyInsights.map((insight: string, index: number) => (
+                                    <li key={index}>• {insight}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+            </div>
+            
             <Select value={filters.industry || "all"} onValueChange={(value) => handleFilterChange("industry", value === "all" ? "" : value)}>
               <SelectTrigger className="w-48">
                 <Briefcase className="w-4 h-4 mr-2" />
