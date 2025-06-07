@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Rocket, Download, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Header() {
   const { toast } = useToast();
