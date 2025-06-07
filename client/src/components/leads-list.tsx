@@ -24,7 +24,7 @@ export function LeadsList({ leads, isLoading, selectedLead, onSelectLead }: Lead
       case "score":
         return b.score - a.score;
       case "companySize":
-        return b.employeeCount - a.employeeCount;
+        return (b.employeeCount || 0) - (a.employeeCount || 0);
       case "recentActivity":
         return new Date(b.recentActivity || 0).getTime() - new Date(a.recentActivity || 0).getTime();
       default:
@@ -101,14 +101,19 @@ export function LeadsList({ leads, isLoading, selectedLead, onSelectLead }: Lead
   }
 
   return (
-    <Card className="shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-      <div className="p-4 sm:p-6 border-b border-slate-200 dark:border-slate-700">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100">AI-Scored Leads</h2>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
-            <span className="text-sm text-slate-600 dark:text-slate-400">Sort by:</span>
+    <Card className="card-premium h-fit">
+      <div className="p-6 border-b border-border/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <h2 className="text-xl font-semibold text-foreground">AI-Scored Leads</h2>
+            <Badge variant="outline" className="text-xs">
+              {leads.length} prospects
+            </Badge>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground hidden sm:block">Sort by:</span>
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full sm:w-[150px]">
+              <SelectTrigger className="w-[140px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -121,50 +126,63 @@ export function LeadsList({ leads, isLoading, selectedLead, onSelectLead }: Lead
         </div>
       </div>
       
-      <div className="divide-y divide-slate-200 dark:divide-slate-700">
+      <div className="divide-y divide-border/50">
         {paginatedLeads.map((lead) => (
           <div 
             key={lead.id}
-            className={`p-4 sm:p-6 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer ${
-              selectedLead?.id === lead.id ? "bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-primary" : ""
+            className={`p-6 hover:bg-muted/50 transition-all duration-200 cursor-pointer group ${
+              selectedLead?.id === lead.id ? "bg-primary/5 border-l-4 border-l-primary" : ""
             }`}
             onClick={() => onSelectLead(lead)}
           >
-            <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-              <div className="flex items-start space-x-3 sm:space-x-4 flex-1 min-w-0">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-semibold flex-shrink-0">
-                  {getCompanyInitials(lead.companyName)}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4 flex-1 min-w-0">
+                {/* Company Avatar */}
+                <div className="relative">
+                  <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center text-white font-semibold flex-shrink-0 group-hover:scale-105 transition-transform">
+                    {getCompanyInitials(lead.companyName)}
+                  </div>
+                  <div className={`absolute -top-1 -right-1 w-4 h-4 ${getScoreBadgeColor(lead.score)} rounded-full border-2 border-background flex items-center justify-center`}>
+                    <span className="text-[10px] font-bold text-white">{Math.round(lead.score/10)}</span>
+                  </div>
                 </div>
+                
+                {/* Lead Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-3 mb-2">
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">{lead.companyName}</h3>
-                    <div className="flex items-center space-x-1">
-                      <div className={`w-3 h-3 ${getScoreBadgeColor(lead.score)} rounded-full ${lead.score >= 80 ? 'animate-pulse' : ''}`}></div>
-                      <span className={`${getScoreColor(lead.score)} font-semibold text-sm`}>{lead.score}</span>
+                  <div className="flex items-center space-x-3 mb-1">
+                    <h3 className="font-semibold text-foreground truncate text-lg">{lead.companyName}</h3>
+                    <div className="score-badge">
+                      <span className="text-sm font-bold">{lead.score}</span>
                     </div>
                   </div>
-                  <p className="text-slate-600 dark:text-slate-400 mb-2 truncate">{lead.contactName} - {lead.jobTitle}</p>
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-slate-500 dark:text-slate-500">
-                    <span className="flex items-center bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
+                  
+                  <p className="text-muted-foreground mb-3 truncate">
+                    <span className="font-medium">{lead.contactName}</span> • {lead.jobTitle}
+                  </p>
+                  
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <Badge variant="secondary" className="bg-muted text-muted-foreground">
                       <Users className="w-3 h-3 mr-1" />
                       {lead.companySize}
-                    </span>
-                    <span className="flex items-center bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
+                    </Badge>
+                    <Badge variant="secondary" className="bg-muted text-muted-foreground">
                       <Building className="w-3 h-3 mr-1" />
                       {lead.industry}
-                    </span>
-                    <span className="flex items-center bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded truncate">
+                    </Badge>
+                    <Badge variant="secondary" className="bg-muted text-muted-foreground hidden sm:flex">
                       <MapPin className="w-3 h-3 mr-1" />
                       {lead.location}
-                    </span>
+                    </Badge>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between sm:justify-end space-x-2 w-full sm:w-auto">
-                <Badge className={`${getPriorityColor(lead.priority)} dark:bg-opacity-20`}>
+              
+              {/* Priority and Arrow */}
+              <div className="flex items-center space-x-3">
+                <Badge className={`${getPriorityColor(lead.priority)} border-0`}>
                   {getPriorityLabel(lead.priority)}
                 </Badge>
-                <ChevronRight className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
             </div>
           </div>

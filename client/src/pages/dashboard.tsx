@@ -143,35 +143,41 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
+    <div className="min-h-screen transition-colors">
       <Header />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <div className="mb-6">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 max-w-7xl">
+        {/* Stats Cards Section */}
+        <section className="mb-8">
           <StatsCards stats={stats} />
-        </div>
+        </section>
         
-        <div className="space-y-6">
-          <div className="w-full">
-            <AdvancedFilters
-              onFiltersChange={handleFiltersChange}
-              onClearFilters={handleClearFilters}
-              isOpen={filtersOpen}
-              onToggle={() => setFiltersOpen(!filtersOpen)}
+        {/* Filters Section */}
+        <section className="mb-6">
+          <AdvancedFilters
+            onFiltersChange={handleFiltersChange}
+            onClearFilters={handleClearFilters}
+            isOpen={filtersOpen}
+            onToggle={() => setFiltersOpen(!filtersOpen)}
+          />
+        </section>
+        
+        {/* Main Content Grid */}
+        <section className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8">
+          {/* Leads List - Takes full width on mobile, 7 columns on xl screens */}
+          <div className="xl:col-span-7 order-1">
+            <LeadsList 
+              leads={filteredLeads || []}
+              isLoading={isLoading}
+              selectedLead={selectedLead}
+              onSelectLead={setSelectedLead}
             />
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
-            <div className="lg:col-span-5 xl:col-span-6">
-              <LeadsList 
-                leads={filteredLeads || []}
-                isLoading={isLoading}
-                selectedLead={selectedLead}
-                onSelectLead={setSelectedLead}
-              />
-            </div>
-            
-            <div className="lg:col-span-3 xl:col-span-3">
+          {/* Right Sidebar - Stack vertically on mobile, side by side on xl */}
+          <div className="xl:col-span-5 order-2 space-y-6">
+            {/* Prospecting Panel */}
+            <div className="w-full">
               <LeadProspectingPanel 
                 onLeadsProspected={() => {
                   window.location.reload();
@@ -179,16 +185,17 @@ export default function Dashboard() {
               />
             </div>
             
-            <div className="lg:col-span-4 xl:col-span-3">
-              <div className="sticky top-4">
+            {/* Analytics Panel */}
+            <div className="w-full">
+              <div className="xl:sticky xl:top-24">
                 <LeadQualityAnalytics 
                   lead={selectedLead}
                 />
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }
