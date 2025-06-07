@@ -25,10 +25,10 @@ export async function fetchCompaniesFromGitHub(limit: number = 10): Promise<Comp
   try {
     const response = await axios.get('https://api.github.com/search/repositories', {
       params: {
-        q: 'language:javascript OR language:python OR language:typescript stars:>1000',
+        q: 'stars:>1000',
         sort: 'stars',
         order: 'desc',
-        per_page: limit * 2
+        per_page: Math.min(limit * 2, 30)
       }
     });
 

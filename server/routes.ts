@@ -6,11 +6,11 @@ import { insertLeadSchema, updateLeadSchema } from "@shared/schema";
 import { generateCompanyInsights, generateOutreachEmail } from "./lib/openai";
 import { calculateLeadScore, enrichLeadData, updateLeadPriority } from "./lib/leadScoring";
 import { 
-  fetchCompaniesFromGitHub, 
-  fetchYCombinatorCompanies,
-  fetchCompaniesUsingTech,
-  convertToLeads 
-} from "./lib/realDataSources";
+  prospectFromGitHub,
+  prospectFromYCombinator, 
+  prospectByTechnology,
+  prospectMultipleSources
+} from "./lib/simpleDataSources";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -31,36 +31,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(leads);
     } catch (error) {
       res.status(400).json({ message: "Invalid filter parameters" });
-    }
-  });
-
-  // Get available data sources for prospecting
-  app.get("/api/leads/sources", async (req, res) => {
-    try {
-      const sources = [
-        {
-          id: 'github',
-          name: 'GitHub Organizations',
-          description: 'Tech companies with active open source repositories',
-          dataPoints: ['Company name', 'Tech stack', 'Employee count estimate', 'Location']
-        },
-        {
-          id: 'ycombinator',
-          name: 'Y Combinator Companies',
-          description: 'Startups from Y Combinator accelerator program',
-          dataPoints: ['Company name', 'Industry', 'Team size', 'Location', 'Description']
-        },
-        {
-          id: 'technology',
-          name: 'Companies by Technology',
-          description: 'Companies using specific technologies (requires technology parameter)',
-          dataPoints: ['Company name', 'Website', 'Tech stack', 'Industry']
-        }
-      ];
-      
-      res.json(sources);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch data sources" });
     }
   });
 
@@ -301,31 +271,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/leads/prospect", async (req, res) => {
     try {
       const { source, industry, technology, limit = 10 } = req.body;
-      let companies = [];
+      let leads = [];
       
       switch (source) {
         case 'github':
-          companies = await fetchCompaniesFromGitHub(limit);
+          leads = await prospectFromGitHub(limit);
           break;
         case 'ycombinator':
-          companies = await fetchYCombinatorCompanies(limit);
+          leads = await prospectFromYCombinator(limit);
           break;
         case 'technology':
           if (!technology) {
             return res.status(400).json({ message: "Technology parameter required for technology source" });
           }
-          companies = await fetchCompaniesUsingTech(technology, limit);
+          leads = await prospectByTechnology(technology, limit);
           break;
         default:
-          // Try multiple sources for comprehensive results
-          const [githubCompanies, ycCompanies] = await Promise.all([
-            fetchCompaniesFromGitHub(Math.ceil(limit / 2)),
-            fetchYCombinatorCompanies(Math.ceil(limit / 2))
-          ]);
-          companies = [...githubCompanies, ...ycCompanies].slice(0, limit);
+          leads = await prospectMultipleSources(limit);
       }
-      
-      const leads = await convertToLeads(companies);
       
       // Store the leads and calculate scores
       const storedLeads = [];
@@ -356,26 +319,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const lead of leads) {
         if (!lead.isEnriched) {
-          // Try to find additional information about the company
-          try {
-            const companies = await fetchCompaniesFromGitHub(1);
-            if (companies.length > 0) {
-              const companyData = companies[0];
-              await storage.updateLead(lead.id, {
-                techStack: companyData.techStack || lead.techStack,
-                employeeCount: companyData.employeeCount || lead.employeeCount,
-                isEnriched: true
-              });
-              enrichedCount++;
-            }
-          } catch (enrichError) {
-            console.error(`Failed to enrich lead ${lead.id}:`, enrichError);
-          }
+          // Recalculate and update lead score
+          const enrichedLead = enrichLeadData(lead);
+          await storage.updateLead(lead.id, {
+            score: enrichedLead.score,
+            priority: enrichedLead.priority,
+            isEnriched: true
+          });
+          enrichedCount++;
         }
       }
       
       res.json({
-        message: `Successfully enriched ${enrichedCount} leads with real-world data`,
+        message: `Successfully enriched ${enrichedCount} leads with updated scoring`,
         enrichedCount,
         totalLeads: leads.length
       });
@@ -385,7 +341,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get available data sources for prospecting
+  // Prospect leads from real data sources (must come before :id route)
+  app.post("/api/leads/prospect", async (req, res) => {
+    try {
+      const { source, industry, technology, limit = 10 } = req.body;
+      let leads = [];
+      
+      switch (source) {
+        case 'github':
+          leads = await prospectFromGitHub(limit);
+          break;
+        case 'ycombinator':
+          leads = await prospectFromYCombinator(limit);
+          break;
+        case 'technology':
+          if (!technology) {
+            return res.status(400).json({ message: "Technology parameter required for technology source" });
+          }
+          leads = await prospectByTechnology(technology, limit);
+          break;
+        default:
+          leads = await prospectMultipleSources(limit);
+      }
+      
+      // Store the leads and calculate scores
+      const storedLeads = [];
+      for (const leadData of leads) {
+        const lead = await storage.createLead(leadData);
+        const enrichedLead = enrichLeadData(lead);
+        await storage.updateLead(lead.id, enrichedLead);
+        storedLeads.push(enrichedLead);
+      }
+      
+      res.json({
+        message: `Successfully prospected ${storedLeads.length} leads from ${source || 'multiple sources'}`,
+        leads: storedLeads,
+        source,
+        count: storedLeads.length
+      });
+    } catch (error) {
+      console.error("Lead prospecting error:", error);
+      res.status(500).json({ message: "Failed to prospect leads from data sources" });
+    }
+  });
+
+  // Get available data sources for prospecting (must come before :id route)
   app.get("/api/leads/sources", async (req, res) => {
     try {
       const sources = [
@@ -412,6 +412,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(sources);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch data sources" });
+    }
+  });
+
+  // Enrich existing leads with real-world data (must come before :id route)
+  app.post("/api/leads/enrich-all", async (req, res) => {
+    try {
+      const leads = await storage.getLeads();
+      let enrichedCount = 0;
+      
+      for (const lead of leads) {
+        if (!lead.isEnriched) {
+          // Recalculate and update lead score
+          const enrichedLead = enrichLeadData(lead);
+          await storage.updateLead(lead.id, {
+            score: enrichedLead.score,
+            priority: enrichedLead.priority,
+            isEnriched: true
+          });
+          enrichedCount++;
+        }
+      }
+      
+      res.json({
+        message: `Successfully enriched ${enrichedCount} leads with updated scoring`,
+        enrichedCount,
+        totalLeads: leads.length
+      });
+    } catch (error) {
+      console.error("Lead enrichment error:", error);
+      res.status(500).json({ message: "Failed to enrich leads" });
     }
   });
 
