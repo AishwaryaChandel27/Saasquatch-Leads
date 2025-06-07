@@ -60,9 +60,14 @@ export function LeadQualityAnalytics({ lead }: LeadQualityAnalyticsProps) {
 
   const analyzeLeadMutation = useMutation({
     mutationFn: async (leadId: number) => {
-      return apiRequest(`/api/leads/${leadId}/analyze`, {
-        method: 'POST'
+      const response = await fetch(`/api/leads/${leadId}/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
+      if (!response.ok) throw new Error('Analysis failed');
+      return response.json();
     },
     onSuccess: (data) => {
       setAnalysis(data);
