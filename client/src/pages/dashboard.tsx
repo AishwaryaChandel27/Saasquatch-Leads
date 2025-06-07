@@ -5,6 +5,7 @@ import { LeadsList } from "@/components/leads-list";
 import { LeadQualityAnalytics } from "@/components/lead-quality-analytics";
 import { LeadProspectingPanel } from "@/components/lead-prospecting-panel";
 import { AdvancedFilters } from "@/components/advanced-filters";
+import { ScoringQuickOverview } from "@/components/scoring-quick-overview";
 import { useState, useMemo } from "react";
 import type { Lead } from "@shared/schema";
 

@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Zap, Search, Sparkles, Target, TrendingUp, Download, User } from "lucide-react";
+import { Brain, Zap, Search, Sparkles, Target, TrendingUp, Download, User, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Link, useLocation } from "wouter";
 
 export function Header() {
   const { toast } = useToast();
+  const [location] = useLocation();
 
   const handleExportToCRM = async () => {
     try {
@@ -39,8 +41,8 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 glass-morphism">
       <div className="container mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo Section */}
-        <div className="flex items-center space-x-4">
-          <a className="flex items-center space-x-3 group" href="/">
+        <div className="flex items-center space-x-6">
+          <Link href="/" className="flex items-center space-x-3 group">
             <div className="relative animate-float">
               <div className="absolute inset-0 bg-gradient-primary rounded-full blur-md opacity-75 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative bg-gradient-primary p-2.5 rounded-full">
@@ -63,7 +65,30 @@ export function Header() {
                 </Badge>
               </div>
             </div>
-          </a>
+          </Link>
+          
+          {/* Navigation */}
+          <nav className="hidden md:flex items-center space-x-1">
+            <Link href="/">
+              <Button 
+                variant={location === "/" ? "secondary" : "ghost"} 
+                size="sm" 
+                className="text-sm"
+              >
+                Dashboard
+              </Button>
+            </Link>
+            <Link href="/scoring-system">
+              <Button 
+                variant={location === "/scoring-system" ? "secondary" : "ghost"} 
+                size="sm" 
+                className="text-sm"
+              >
+                <Info className="h-4 w-4 mr-1.5" />
+                Scoring System
+              </Button>
+            </Link>
+          </nav>
         </div>
         
         {/* Search Section */}
