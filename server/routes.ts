@@ -343,28 +343,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enrich existing leads with real-world data (must come before :id route)
+  // Enhanced lead enrichment with real-world data APIs
   app.post("/api/leads/enrich-all", async (req, res) => {
     try {
       const leads = await storage.getLeads();
       let enrichedCount = 0;
+      let apiEnrichedCount = 0;
       
       for (const lead of leads) {
+        let hasBeenEnriched = false;
+        
+        // Apply ML-based scoring to all leads
         if (!lead.isEnriched) {
-          // Recalculate and update lead score
           const enrichedLead = enrichLeadData(lead);
           await storage.updateLead(lead.id, {
             score: enrichedLead.score,
             priority: enrichedLead.priority,
             isEnriched: true
           });
+          hasBeenEnriched = true;
           enrichedCount++;
+        }
+        
+        // Enrich with real-world data for companies with websites
+        if (lead.website && !lead.aiInsights) {
+          try {
+            const enrichmentData = await enrichCompanyFromDomain(lead.website);
+            if (enrichmentData) {
+              // Update lead with enriched company data
+              const updatedData: any = {};
+              
+              if (enrichmentData.companyInfo?.description) {
+                updatedData.description = enrichmentData.companyInfo.description;
+              }
+              
+              if (enrichmentData.companyInfo?.employeeCount) {
+                updatedData.employeeCount = enrichmentData.companyInfo.employeeCount;
+              }
+              
+              if (enrichmentData.companyInfo?.techStack) {
+                updatedData.techStack = enrichmentData.companyInfo.techStack;
+              }
+              
+              if (enrichmentData.companyInfo?.fundingInfo) {
+                updatedData.fundingInfo = enrichmentData.companyInfo.fundingInfo;
+              }
+              
+              // Generate AI insights based on enriched data
+              const insights = await generateCompanyInsights(lead.companyName, {
+                industry: lead.industry,
+                size: lead.companySize,
+                techStack: updatedData.techStack || lead.techStack || [],
+                funding: updatedData.fundingInfo || lead.fundingInfo || '',
+                description: updatedData.description || ''
+              });
+              
+              updatedData.aiInsights = insights;
+              
+              await storage.updateLead(lead.id, updatedData);
+              apiEnrichedCount++;
+              hasBeenEnriched = true;
+            }
+          } catch (error) {
+            console.error(`API enrichment failed for ${lead.companyName}:`, error);
+          }
         }
       }
       
       res.json({
-        message: `Successfully enriched ${enrichedCount} leads with updated scoring`,
+        message: `Successfully enriched ${enrichedCount} leads with scoring${apiEnrichedCount > 0 ? ` and ${apiEnrichedCount} with real-world data` : ''}`,
         enrichedCount,
+        apiEnrichedCount,
         totalLeads: leads.length
       });
     } catch (error) {
