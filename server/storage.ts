@@ -52,7 +52,7 @@ export class MemStorage implements IStorage {
       website: insertLead.website || null,
       score: 0,
       priority: insertLead.priority || "cold",
-      techStack: Array.isArray(insertLead.techStack) ? insertLead.techStack : null,
+      techStack: Array.isArray(insertLead.techStack) ? insertLead.techStack : (insertLead.techStack ? [insertLead.techStack] : null),
       aiInsights: insertLead.aiInsights || null,
       fundingInfo: insertLead.fundingInfo || null,
       employeeCount: insertLead.employeeCount || null,

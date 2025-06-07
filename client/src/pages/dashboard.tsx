@@ -4,6 +4,7 @@ import { StatsCards } from "@/components/stats-cards";
 import { FilterPanel } from "@/components/filter-panel";
 import { LeadsList } from "@/components/leads-list";
 import { AIInsightsPanel } from "@/components/ai-insights-panel";
+import { LeadProspectingPanel } from "@/components/lead-prospecting-panel";
 import { useState } from "react";
 import type { Lead } from "@shared/schema";
 
@@ -53,13 +54,21 @@ export default function Dashboard() {
           onFiltersChange={setFilters}
         />
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          <div className="xl:col-span-2">
             <LeadsList 
               leads={leads || []}
               isLoading={isLoading}
               selectedLead={selectedLead}
               onSelectLead={setSelectedLead}
+            />
+          </div>
+          
+          <div className="space-y-6">
+            <LeadProspectingPanel 
+              onLeadsProspected={() => {
+                // Refresh leads and stats when new leads are prospected
+              }}
             />
           </div>
           
