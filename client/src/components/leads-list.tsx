@@ -102,18 +102,24 @@ export function LeadsList({ leads, isLoading, selectedLead, onSelectLead }: Lead
 
   return (
     <Card className="card-premium h-fit">
-      <div className="p-6 border-b border-border/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <h2 className="text-xl font-semibold text-foreground">AI-Scored Leads</h2>
-            <Badge variant="outline" className="text-xs">
-              {leads.length} prospects
-            </Badge>
+      <div className="p-4 lg:p-6 xl:p-8 border-b border-border/50">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
+          <div className="flex flex-col lg:flex-row lg:items-center space-y-2 lg:space-y-0 lg:space-x-4">
+            <h2 className="text-xl lg:text-2xl xl:text-3xl font-bold gradient-text">AI-Scored Leads</h2>
+            <div className="flex items-center space-x-2">
+              <Badge variant="secondary" className="text-xs lg:text-sm">
+                <Users className="h-3 w-3 lg:h-4 lg:w-4 mr-1.5" />
+                {leads.length} prospects
+              </Badge>
+              <Badge variant="outline" className="text-xs lg:text-sm">
+                Real-time scoring
+              </Badge>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-muted-foreground hidden sm:block">Sort by:</span>
+          <div className="flex items-center space-x-3">
+            <span className="text-sm text-muted-foreground hidden lg:block">Sort by:</span>
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[140px] lg:w-[160px] xl:w-[180px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -130,33 +136,33 @@ export function LeadsList({ leads, isLoading, selectedLead, onSelectLead }: Lead
         {paginatedLeads.map((lead) => (
           <div 
             key={lead.id}
-            className={`p-6 hover:bg-muted/50 transition-all duration-200 cursor-pointer group ${
-              selectedLead?.id === lead.id ? "bg-primary/5 border-l-4 border-l-primary" : ""
+            className={`p-4 lg:p-6 xl:p-8 hover:bg-muted/50 transition-all duration-300 cursor-pointer group transform hover:scale-[1.01] ${
+              selectedLead?.id === lead.id ? "bg-primary/5 border-l-4 border-l-primary shadow-lg" : ""
             }`}
             onClick={() => onSelectLead(lead)}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4 flex-1 min-w-0">
-                {/* Company Avatar */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
+              <div className="flex items-center space-x-4 lg:space-x-6 flex-1 min-w-0">
+                {/* Company Avatar - Enhanced for large screens */}
                 <div className="relative">
-                  <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center text-white font-semibold flex-shrink-0 group-hover:scale-105 transition-transform">
-                    {getCompanyInitials(lead.companyName)}
+                  <div className="w-12 h-12 lg:w-14 lg:h-14 xl:w-16 xl:h-16 bg-gradient-primary rounded-xl lg:rounded-2xl flex items-center justify-center text-white font-semibold flex-shrink-0 group-hover:scale-105 transition-all duration-300">
+                    <span className="text-sm lg:text-base xl:text-lg">{getCompanyInitials(lead.companyName)}</span>
                   </div>
-                  <div className={`absolute -top-1 -right-1 w-4 h-4 ${getScoreBadgeColor(lead.score)} rounded-full border-2 border-background flex items-center justify-center`}>
-                    <span className="text-[10px] font-bold text-white">{Math.round(lead.score/10)}</span>
+                  <div className={`absolute -top-1 -right-1 w-4 h-4 lg:w-5 lg:h-5 ${getScoreBadgeColor(lead.score)} rounded-full border-2 border-background flex items-center justify-center`}>
+                    <span className="text-[10px] lg:text-xs font-bold text-white">{Math.round(lead.score/10)}</span>
                   </div>
                 </div>
                 
-                {/* Lead Info */}
+                {/* Lead Info - Enhanced layout */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-3 mb-1">
-                    <h3 className="font-semibold text-foreground truncate text-lg">{lead.companyName}</h3>
-                    <div className="score-badge">
-                      <span className="text-sm font-bold">{lead.score}</span>
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:space-x-4 mb-2">
+                    <h3 className="font-bold text-foreground truncate text-lg lg:text-xl xl:text-2xl">{lead.companyName}</h3>
+                    <div className="score-badge mt-1 lg:mt-0">
+                      <span className="text-sm lg:text-base font-bold">{lead.score}</span>
                     </div>
                   </div>
                   
-                  <p className="text-muted-foreground mb-3 truncate">
+                  <p className="text-muted-foreground mb-3 lg:mb-4 truncate text-sm lg:text-base">
                     <span className="font-medium">{lead.contactName}</span> • {lead.jobTitle}
                   </p>
                   
