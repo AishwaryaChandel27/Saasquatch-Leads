@@ -10,6 +10,8 @@ import { enrichCompanyByDomain, searchLinkedInCompany, getCrunchbaseFunding } fr
 import { enrichCompanyWithClearbit, calculateClearbitScore, categorizeClearbitPriority } from "./lib/clearbit";
 import { calculateAdvancedLeadScore, enrichLeadWithAdvancedScoring } from "./lib/advancedLeadScoring";
 import { enrichLeadData, calculateEnrichmentScore } from "./lib/leadEnrichment";
+import { calculateEnhancedScore } from "./lib/enhancedScoring";
+import { intelligentProspecting, prospectHighValueTargets } from "./lib/intelligentProspecting";
 import { 
   prospectFromGitHub,
   prospectFromYCombinator, 
@@ -137,7 +139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Advanced lead analysis with comprehensive scoring
+  // Enhanced lead analysis with comprehensive scoring
   app.post("/api/leads/:id/analyze", async (req, res) => {
     try {
       const leadId = parseInt(req.params.id);
@@ -147,8 +149,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Lead not found" });
       }
 
-      // Calculate advanced quality metrics
-      const qualityMetrics = calculateAdvancedLeadScore(lead);
+      // Calculate enhanced scoring with detailed breakdown
+      const enhancedScoring = calculateEnhancedScore(lead);
       
       // Generate AI insights
       const aiInsights = await generateCompanyInsights(
@@ -162,27 +164,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lead.recentActivity || undefined
       ).catch(() => null);
 
-      // Simulate enrichment score based on available data
-      const enrichmentScore = {
-        score: Math.min(qualityMetrics.score + 10, 100),
-        completeness: qualityMetrics.confidence,
-        confidence: Math.min(qualityMetrics.confidence + 15, 100)
-      };
-
       const analysis = {
         leadId,
-        qualityMetrics,
-        enrichmentData: null,
-        enrichmentScore,
+        qualityMetrics: {
+          score: enhancedScoring.totalScore,
+          category: enhancedScoring.category,
+          confidence: enhancedScoring.confidence,
+          factors: {
+            positive: enhancedScoring.opportunityFactors,
+            negative: enhancedScoring.riskFactors,
+            neutral: []
+          },
+          recommendations: enhancedScoring.recommendations
+        },
+        enrichmentData: enhancedScoring.breakdown,
+        enrichmentScore: {
+          score: enhancedScoring.totalScore,
+          completeness: enhancedScoring.confidence,
+          confidence: enhancedScoring.confidence
+        },
         aiInsights,
         analysisTimestamp: new Date().toISOString()
       };
 
       // Update lead with enhanced scoring
       await storage.updateLead(leadId, {
-        score: qualityMetrics.score,
-        priority: qualityMetrics.category === 'High' ? 'hot' : 
-                 qualityMetrics.category === 'Medium' ? 'warm' : 'cold',
+        score: enhancedScoring.totalScore,
+        priority: enhancedScoring.category === 'High' ? 'hot' : 
+                 enhancedScoring.category === 'Medium' ? 'warm' : 'cold',
         aiInsights: aiInsights ? JSON.stringify(aiInsights) : null,
         isEnriched: true
       });

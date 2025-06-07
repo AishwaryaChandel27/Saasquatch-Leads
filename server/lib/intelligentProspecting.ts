@@ -239,12 +239,10 @@ function generateLeadForCompany(company: any, criteria: ProspectingCriteria): In
     recentActivity,
     buyingIntent,
     priority: baseScore >= 75 ? "hot" : baseScore >= 50 ? "warm" : "cold",
-    score: baseScore,
     employeeCount: getEmployeeCountFromSize(company.size),
     budgetRange: generateBudgetRange(company.size, company.funding),
     decisionTimeline: generateDecisionTimeline(jobTitle),
-    aiInsights: null,
-    isEnriched: false
+    aiInsights: null
   };
 }
 
