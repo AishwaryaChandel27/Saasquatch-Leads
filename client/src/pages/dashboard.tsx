@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/header";
 import { StatsCards } from "@/components/stats-cards";
-import { FilterPanel } from "@/components/filter-panel";
+
 import { LeadsList } from "@/components/leads-list";
 import { AIInsightsPanel } from "@/components/ai-insights-panel";
 import { LeadProspectingPanel } from "@/components/lead-prospecting-panel";
@@ -10,24 +10,10 @@ import type { Lead } from "@shared/schema";
 
 export default function Dashboard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [filters, setFilters] = useState({
-    search: "",
-    industry: "",
-    companySize: "",
-    priority: "",
-    minScore: undefined as number | undefined,
-  });
-
   const { data: leads, isLoading } = useQuery({
-    queryKey: ["/api/leads", filters],
+    queryKey: ["/api/leads"],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== "" && value !== undefined) {
-          params.append(key, value.toString());
-        }
-      });
-      const response = await fetch(`/api/leads?${params}`);
+      const response = await fetch(`/api/leads`);
       if (!response.ok) throw new Error("Failed to fetch leads");
       return response.json();
     },
@@ -48,11 +34,6 @@ export default function Dashboard() {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <StatsCards stats={stats} />
-        
-        <FilterPanel 
-          filters={filters} 
-          onFiltersChange={setFilters}
-        />
         
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           <div className="xl:col-span-2">

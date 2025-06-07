@@ -207,109 +207,241 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
                     Search
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle className="flex items-center space-x-2">
-                      <Building className="w-5 h-5" />
-                      <span>Company Details</span>
+                    <DialogTitle className="flex items-center space-x-3">
+                      {companyDetails?.logo && (
+                        <img 
+                          src={companyDetails.logo} 
+                          alt={`${companyDetails.companyName} logo`}
+                          className="w-8 h-8 rounded object-contain"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      )}
+                      <Building className="w-6 h-6 text-blue-600" />
+                      <span>Company Details: {companyDetails?.companyName}</span>
                     </DialogTitle>
                   </DialogHeader>
+                  
                   {companyDetails && (
-                    <div className="space-y-6 pt-4">
-                      {/* Company Header */}
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="text-xl font-semibold">{companyDetails.companyName}</h3>
-                          <p className="text-slate-600">{companyDetails.industry}</p>
+                    <div className="space-y-6 mt-6">
+                      {/* Company Overview with Logo */}
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-4">
+                            {companyDetails.logo && (
+                              <img 
+                                src={companyDetails.logo} 
+                                alt={`${companyDetails.companyName} logo`}
+                                className="w-16 h-16 rounded-lg object-contain bg-white p-2 shadow-sm"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            )}
+                            <div className="flex-1">
+                              <h3 className="text-2xl font-bold text-slate-900 mb-2">{companyDetails.companyName}</h3>
+                              {companyDetails.domain && (
+                                <p className="text-slate-600 mb-3">{companyDetails.domain}</p>
+                              )}
+                              {companyDetails.description && (
+                                <p className="text-slate-700 text-sm mb-4 max-w-2xl leading-relaxed">{companyDetails.description}</p>
+                              )}
+                              
+                              {/* Basic Info Grid */}
+                              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                                <div className="flex items-center space-x-2">
+                                  <Building className="w-4 h-4 text-slate-500" />
+                                  <span><strong>Industry:</strong> {companyDetails.industry || companyDetails.sector}</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <MapPin className="w-4 h-4 text-slate-500" />
+                                  <span><strong>Location:</strong> {companyDetails.location}</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Users className="w-4 h-4 text-slate-500" />
+                                  <span><strong>Employees:</strong> {companyDetails.employeeCount || companyDetails.employeesRange}</span>
+                                </div>
+                                {companyDetails.foundedYear && (
+                                  <div className="flex items-center space-x-2">
+                                    <Calendar className="w-4 h-4 text-slate-500" />
+                                    <span><strong>Founded:</strong> {companyDetails.foundedYear}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Score Badges */}
+                          <div className="ml-6 space-y-2">
+                            <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${
+                              companyDetails.priority === 'hot' ? 'bg-red-100 text-red-800' :
+                              companyDetails.priority === 'warm' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              <Star className="w-4 h-4 mr-2" />
+                              Clearbit: {companyDetails.score}/100
+                            </div>
+                            {companyDetails.mlScore && (
+                              <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${
+                                companyDetails.mlPriority === 'hot' ? 'bg-purple-100 text-purple-800' :
+                                companyDetails.mlPriority === 'warm' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                <TrendingUp className="w-4 h-4 mr-2" />
+                                ML Score: {companyDetails.mlScore}/100
+                              </div>
+                            )}
+                            <div className="text-center text-xs text-slate-500 capitalize">
+                              {companyDetails.priority} Priority
+                            </div>
+                          </div>
                         </div>
-                        {companyDetails.website && (
-                          <Button variant="outline" size="sm" asChild>
-                            <a href={companyDetails.website} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="w-4 h-4 mr-1" />
-                              Visit
-                            </a>
-                          </Button>
-                        )}
                       </div>
 
-                      {/* Key Metrics */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {companyDetails.employeeCount && (
-                          <div className="flex items-center space-x-2 p-3 bg-slate-50 rounded-lg">
-                            <Users className="w-4 h-4 text-slate-600" />
-                            <div>
-                              <div className="text-sm font-medium">{companyDetails.employeeCount}</div>
-                              <div className="text-xs text-slate-500">Employees</div>
-                            </div>
+                      {/* Social Media & Links */}
+                      {(companyDetails.linkedinUrl || companyDetails.twitterUrl || companyDetails.website || companyDetails.crunchbaseUrl) && (
+                        <div className="bg-white p-6 rounded-lg border">
+                          <h4 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+                            <Globe className="w-5 h-5 mr-2 text-blue-600" />
+                            Online Presence
+                          </h4>
+                          <div className="flex flex-wrap gap-3">
+                            {companyDetails.website && (
+                              <a href={companyDetails.website} target="_blank" rel="noopener noreferrer" 
+                                 className="flex items-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                                <Globe className="w-4 h-4 text-gray-600" />
+                                <span className="text-sm font-medium">Website</span>
+                              </a>
+                            )}
+                            {companyDetails.linkedinUrl && (
+                              <a href={companyDetails.linkedinUrl} target="_blank" rel="noopener noreferrer" 
+                                 className="flex items-center space-x-2 px-3 py-2 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors">
+                                <Users className="w-4 h-4 text-blue-600" />
+                                <span className="text-sm font-medium">LinkedIn</span>
+                              </a>
+                            )}
+                            {companyDetails.twitterUrl && (
+                              <a href={companyDetails.twitterUrl} target="_blank" rel="noopener noreferrer" 
+                                 className="flex items-center space-x-2 px-3 py-2 bg-sky-100 hover:bg-sky-200 rounded-lg transition-colors">
+                                <span className="text-sm font-medium">Twitter</span>
+                              </a>
+                            )}
+                            {companyDetails.crunchbaseUrl && (
+                              <a href={companyDetails.crunchbaseUrl} target="_blank" rel="noopener noreferrer" 
+                                 className="flex items-center space-x-2 px-3 py-2 bg-green-100 hover:bg-green-200 rounded-lg transition-colors">
+                                <TrendingUp className="w-4 h-4 text-green-600" />
+                                <span className="text-sm font-medium">Crunchbase</span>
+                              </a>
+                            )}
                           </div>
-                        )}
-                        {companyDetails.fundingInfo && (
-                          <div className="flex items-center space-x-2 p-3 bg-slate-50 rounded-lg">
-                            <DollarSign className="w-4 h-4 text-slate-600" />
-                            <div>
-                              <div className="text-sm font-medium">{companyDetails.fundingInfo}</div>
-                              <div className="text-xs text-slate-500">Funding</div>
-                            </div>
-                          </div>
-                        )}
-                        {companyDetails.location && (
-                          <div className="flex items-center space-x-2 p-3 bg-slate-50 rounded-lg">
-                            <MapPin className="w-4 h-4 text-slate-600" />
-                            <div>
-                              <div className="text-sm font-medium">{companyDetails.location}</div>
-                              <div className="text-xs text-slate-500">Location</div>
-                            </div>
-                          </div>
-                        )}
-                        {companyDetails.score && (
-                          <div className="flex items-center space-x-2 p-3 bg-slate-50 rounded-lg">
-                            <Star className="w-4 h-4 text-slate-600" />
-                            <div>
-                              <div className="text-sm font-medium">{companyDetails.score}/100</div>
-                              <div className="text-xs text-slate-500">ML Score</div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
 
-                      {/* Description */}
-                      {companyDetails.description && (
-                        <div>
-                          <h4 className="font-medium mb-2">About</h4>
-                          <p className="text-slate-600 text-sm leading-relaxed">{companyDetails.description}</p>
+                      {/* Financial Metrics */}
+                      {(companyDetails.annualRevenue || companyDetails.totalFunding || companyDetails.marketCap || companyDetails.fundingInfo) && (
+                        <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                          <h4 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+                            <DollarSign className="w-5 h-5 mr-2 text-green-600" />
+                            Financial Information
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {companyDetails.annualRevenue && (
+                              <div className="text-center p-3 bg-white rounded-lg">
+                                <div className="text-2xl font-bold text-green-600">
+                                  ${(companyDetails.annualRevenue / 1000000).toFixed(1)}M
+                                </div>
+                                <div className="text-sm text-slate-600">Annual Revenue</div>
+                              </div>
+                            )}
+                            {companyDetails.totalFunding && (
+                              <div className="text-center p-3 bg-white rounded-lg">
+                                <div className="text-2xl font-bold text-blue-600">
+                                  ${(companyDetails.totalFunding / 1000000).toFixed(1)}M
+                                </div>
+                                <div className="text-sm text-slate-600">Total Funding</div>
+                              </div>
+                            )}
+                            {companyDetails.marketCap && (
+                              <div className="text-center p-3 bg-white rounded-lg">
+                                <div className="text-2xl font-bold text-purple-600">
+                                  ${(companyDetails.marketCap / 1000000).toFixed(1)}M
+                                </div>
+                                <div className="text-sm text-slate-600">Market Cap</div>
+                              </div>
+                            )}
+                          </div>
+                          {companyDetails.fundingInfo && (
+                            <div className="mt-4 p-3 bg-white rounded-lg">
+                              <p className="text-green-800 font-medium">{companyDetails.fundingInfo}</p>
+                            </div>
+                          )}
                         </div>
                       )}
 
                       {/* Tech Stack */}
                       {companyDetails.techStack && companyDetails.techStack.length > 0 && (
-                        <div>
-                          <h4 className="font-medium mb-2">Tech Stack</h4>
+                        <div className="bg-white p-6 rounded-lg border">
+                          <h4 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+                            <Code className="w-5 h-5 mr-2 text-blue-600" />
+                            Technology Stack ({companyDetails.techStack.length} technologies)
+                          </h4>
                           <div className="flex flex-wrap gap-2">
                             {companyDetails.techStack.map((tech: string, index: number) => (
-                              <Badge key={index} variant="outline">{tech}</Badge>
+                              <Badge key={index} variant="secondary" className="text-xs px-3 py-1">
+                                {tech}
+                              </Badge>
                             ))}
                           </div>
+                          {companyDetails.techCategories && companyDetails.techCategories.length > 0 && (
+                            <div className="mt-4">
+                              <h5 className="font-medium text-slate-700 mb-2">Categories</h5>
+                              <div className="flex flex-wrap gap-2">
+                                {companyDetails.techCategories.map((category: string, index: number) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {category}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
 
                       {/* AI Insights */}
                       {companyDetails.aiInsights && (
-                        <div>
-                          <h4 className="font-medium mb-2">AI Analysis</h4>
-                          <div className="space-y-3">
-                            <div className="p-3 bg-blue-50 rounded-lg">
-                              <p className="text-sm">{companyDetails.aiInsights.summary}</p>
+                        <div className="bg-slate-50 p-6 rounded-lg border">
+                          <h4 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+                            <Sparkles className="w-5 h-5 mr-2 text-purple-600" />
+                            AI-Generated Insights
+                          </h4>
+                          
+                          <div className="space-y-4">
+                            <div>
+                              <h5 className="font-medium text-slate-700 mb-2">Summary</h5>
+                              <p className="text-slate-600 text-sm leading-relaxed">{companyDetails.aiInsights.summary}</p>
                             </div>
-                            {companyDetails.aiInsights.keyInsights && companyDetails.aiInsights.keyInsights.length > 0 && (
-                              <div>
-                                <h5 className="text-sm font-medium mb-1">Key Insights</h5>
-                                <ul className="text-sm text-slate-600 space-y-1">
-                                  {companyDetails.aiInsights.keyInsights.map((insight: string, index: number) => (
-                                    <li key={index}>• {insight}</li>
-                                  ))}
-                                </ul>
+                            
+                            <div>
+                              <h5 className="font-medium text-slate-700 mb-2">Key Insights</h5>
+                              <ul className="space-y-1">
+                                {companyDetails.aiInsights.keyInsights.map((insight: string, index: number) => (
+                                  <li key={index} className="text-slate-600 text-sm flex items-start">
+                                    <TrendingUp className="w-3 h-3 mr-2 mt-1 text-green-500 shrink-0" />
+                                    {insight}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            
+                            <div>
+                              <h5 className="font-medium text-slate-700 mb-2">Recommended Approach</h5>
+                              <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-400">
+                                <p className="text-blue-800 text-sm">{companyDetails.aiInsights.recommendedApproach}</p>
                               </div>
-                            )}
+                            </div>
                           </div>
                         </div>
                       )}
