@@ -1,17 +1,85 @@
 import type { Lead, ScoringCriteria } from "@shared/schema";
 
-// Industry priority weights
-const INDUSTRY_WEIGHTS: Record<string, number> = {
+// Enhanced industry categories with detailed scoring
+export const INDUSTRY_CATEGORIES = {
+  // High-value tech industries (20-25 points)
   "SaaS": 25,
   "FinTech": 24,
-  "Technology": 23,
-  "E-commerce": 22,
-  "Healthcare": 21,
-  "Data Analytics": 20,
-  "Cloud Services": 19,
-  "Manufacturing": 15,
-  "Retail": 12,
-  "Other": 10,
+  "Cybersecurity": 24,
+  "AI/ML": 23,
+  "Enterprise Software": 23,
+  "Cloud Services": 22,
+  "DevOps": 22,
+  "Data Analytics": 21,
+  "API/Platform": 21,
+  "EdTech": 20,
+  
+  // Growth industries (15-19 points)
+  "E-commerce": 19,
+  "HealthTech": 19,
+  "PropTech": 18,
+  "InsurTech": 18,
+  "LegalTech": 17,
+  "HRTech": 17,
+  "MarTech": 16,
+  "AdTech": 16,
+  "Gaming": 15,
+  "Social Media": 15,
+  
+  // Traditional with digital needs (10-14 points)
+  "Technology": 14,
+  "Financial Services": 13,
+  "Healthcare": 13,
+  "Manufacturing": 12,
+  "Consulting": 12,
+  "Media": 11,
+  "Retail": 11,
+  "Transportation": 10,
+  "Real Estate": 10,
+  
+  // Lower priority (5-9 points)
+  "Travel": 9,
+  "Food Delivery": 8,
+  "Agriculture": 7,
+  "Non-profit": 6,
+  "Government": 5,
+  "Education": 5,
+  "Other": 8
+};
+
+// Location-based scoring weights (market maturity and tech adoption)
+export const LOCATION_WEIGHTS: Record<string, number> = {
+  // Tier 1 tech hubs
+  "San Francisco, CA": 10,
+  "Palo Alto, CA": 10,
+  "Mountain View, CA": 10,
+  "Seattle, WA": 9,
+  "New York, NY": 9,
+  "Boston, MA": 8,
+  "Austin, TX": 8,
+  "Los Angeles, CA": 7,
+  
+  // Tier 2 tech cities
+  "Denver, CO": 6,
+  "Chicago, IL": 6,
+  "Atlanta, GA": 6,
+  "Portland, OR": 6,
+  "Raleigh, NC": 5,
+  "Miami, FL": 5,
+  "Philadelphia, PA": 5,
+  "Washington, DC": 5,
+  
+  // International tech hubs
+  "London, UK": 8,
+  "Toronto, CA": 7,
+  "Amsterdam, NL": 7,
+  "Berlin, DE": 6,
+  "Tel Aviv, IL": 8,
+  "Singapore": 7,
+  "Sydney, AU": 6,
+  
+  // Default for other locations
+  "Other": 3
 };
 
 // Company size weights (based on employee count ranges)
@@ -48,29 +116,107 @@ const ENGAGEMENT_WEIGHTS: Record<string, number> = {
 
 export function calculateLeadScore(lead: Lead): { score: number; breakdown: ScoringCriteria } {
   // Company Size Score (0-25)
-  const companySizeScore = COMPANY_SIZE_WEIGHTS[lead.companySize] || 5;
+  const companySizeScore = calculateCompanySizeScore(lead);
 
-  // Industry Match Score (0-25)
-  const industryScore = INDUSTRY_WEIGHTS[lead.industry] || 10;
+  // Industry Match Score (0-25) 
+  const industryScore = INDUSTRY_CATEGORIES[lead.industry] || 8;
 
   // Job Title Relevance Score (0-25)
   const jobTitleScore = calculateJobTitleScore(lead.jobTitle);
 
-  // Engagement Signals Score (0-25)
+  // Engagement Signals Score (0-15)
   const engagementScore = calculateEngagementScore(lead);
+
+  // Location/Market Score (0-10)
+  const locationScore = calculateLocationScore(lead.location);
+
+  // Funding Stage Score (0-10)
+  const fundingScore = calculateFundingScore(lead.fundingInfo);
 
   const breakdown: ScoringCriteria = {
     companySize: companySizeScore,
-    industryMatch: industryScore,
-    jobTitleRelevance: jobTitleScore,
-    engagementSignals: engagementScore,
+    industry: industryScore,
+    jobTitle: jobTitleScore,
+    engagement: engagementScore,
+    funding: fundingScore
   };
 
   const totalScore = Math.min(100, Math.max(0, 
-    companySizeScore + industryScore + jobTitleScore + engagementScore
+    companySizeScore + industryScore + jobTitleScore + engagementScore + locationScore + fundingScore
   ));
 
   return { score: totalScore, breakdown };
+}
+
+function calculateCompanySizeScore(lead: Lead): number {
+  // Use actual employee count if available for more precise scoring
+  if (lead.employeeCount) {
+    if (lead.employeeCount >= 5000) return 25;
+    if (lead.employeeCount >= 1000) return 24;
+    if (lead.employeeCount >= 500) return 22;
+    if (lead.employeeCount >= 200) return 20;
+    if (lead.employeeCount >= 50) return 18;
+    if (lead.employeeCount >= 10) return 15;
+    return 10;
+  }
+  
+  // Fallback to company size string
+  return COMPANY_SIZE_WEIGHTS[lead.companySize] || 5;
+}
+
+function calculateLocationScore(location: string): number {
+  // Check for exact location matches
+  const exactMatch = LOCATION_WEIGHTS[location];
+  if (exactMatch) return exactMatch;
+  
+  // Check for city matches (case insensitive)
+  const locationLower = location.toLowerCase();
+  for (const [key, value] of Object.entries(LOCATION_WEIGHTS)) {
+    if (locationLower.includes(key.toLowerCase().split(',')[0])) {
+      return value;
+    }
+  }
+  
+  // Check for state/country matches
+  if (locationLower.includes('california') || locationLower.includes('ca')) return 8;
+  if (locationLower.includes('new york') || locationLower.includes('ny')) return 7;
+  if (locationLower.includes('washington') || locationLower.includes('wa')) return 7;
+  if (locationLower.includes('massachusetts') || locationLower.includes('ma')) return 6;
+  if (locationLower.includes('texas') || locationLower.includes('tx')) return 6;
+  
+  return 3; // Default for other locations
+}
+
+function calculateFundingScore(fundingInfo: string | null): number {
+  if (!fundingInfo) return 2;
+  
+  const funding = fundingInfo.toLowerCase();
+  
+  // High-growth funding stages
+  if (funding.includes('series c') || funding.includes('series d') || funding.includes('series e')) return 10;
+  if (funding.includes('series b')) return 9;
+  if (funding.includes('series a')) return 8;
+  if (funding.includes('seed')) return 6;
+  if (funding.includes('pre-seed')) return 4;
+  
+  // Public companies
+  if (funding.includes('public') || funding.includes('ipo') || funding.includes('nasdaq') || funding.includes('nyse')) return 7;
+  
+  // High valuation indicators
+  if (funding.includes('billion') || funding.includes('unicorn')) return 10;
+  if (funding.includes('million')) {
+    // Extract funding amount for more precise scoring
+    const match = funding.match(/(\d+).*million/);
+    if (match) {
+      const amount = parseInt(match[1]);
+      if (amount >= 100) return 9;
+      if (amount >= 50) return 8;
+      if (amount >= 10) return 6;
+      return 5;
+    }
+  }
+  
+  return 3; // Default for other funding stages
 }
 
 function calculateJobTitleScore(jobTitle: string): number {

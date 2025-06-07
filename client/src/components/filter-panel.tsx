@@ -2,7 +2,67 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Star, Building, Clock } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Filter, Star, Building, Clock, MapPin, Briefcase } from "lucide-react";
+
+// Enhanced industry categories for advanced filtering
+const INDUSTRY_OPTIONS = [
+  { value: "all", label: "All Industries", category: "All" },
+  
+  // High-value tech industries
+  { value: "SaaS", label: "SaaS", category: "High-Tech" },
+  { value: "FinTech", label: "FinTech", category: "High-Tech" },
+  { value: "Cybersecurity", label: "Cybersecurity", category: "High-Tech" },
+  { value: "AI/ML", label: "AI/ML", category: "High-Tech" },
+  { value: "Enterprise Software", label: "Enterprise Software", category: "High-Tech" },
+  { value: "Cloud Services", label: "Cloud Services", category: "High-Tech" },
+  { value: "DevOps", label: "DevOps", category: "High-Tech" },
+  { value: "Data Analytics", label: "Data Analytics", category: "High-Tech" },
+  
+  // Growth industries
+  { value: "E-commerce", label: "E-commerce", category: "Growth" },
+  { value: "HealthTech", label: "HealthTech", category: "Growth" },
+  { value: "EdTech", label: "EdTech", category: "Growth" },
+  { value: "PropTech", label: "PropTech", category: "Growth" },
+  { value: "InsurTech", label: "InsurTech", category: "Growth" },
+  { value: "LegalTech", label: "LegalTech", category: "Growth" },
+  { value: "HRTech", label: "HRTech", category: "Growth" },
+  { value: "MarTech", label: "MarTech", category: "Growth" },
+  
+  // Traditional industries
+  { value: "Healthcare", label: "Healthcare", category: "Traditional" },
+  { value: "Financial Services", label: "Financial Services", category: "Traditional" },
+  { value: "Manufacturing", label: "Manufacturing", category: "Traditional" },
+  { value: "Retail", label: "Retail", category: "Traditional" },
+  { value: "Real Estate", label: "Real Estate", category: "Traditional" },
+  { value: "Media", label: "Media", category: "Traditional" },
+  { value: "Transportation", label: "Transportation", category: "Traditional" },
+  { value: "Travel", label: "Travel", category: "Traditional" },
+];
+
+// Popular tech hubs and cities for location filtering
+const LOCATION_OPTIONS = [
+  { value: "all", label: "All Locations", tier: "All" },
+  
+  // US Tech Hubs
+  { value: "San Francisco, CA", label: "San Francisco, CA", tier: "Tier 1" },
+  { value: "Seattle, WA", label: "Seattle, WA", tier: "Tier 1" },
+  { value: "New York, NY", label: "New York, NY", tier: "Tier 1" },
+  { value: "Boston, MA", label: "Boston, MA", tier: "Tier 1" },
+  { value: "Austin, TX", label: "Austin, TX", tier: "Tier 1" },
+  { value: "Los Angeles, CA", label: "Los Angeles, CA", tier: "Tier 2" },
+  { value: "Chicago, IL", label: "Chicago, IL", tier: "Tier 2" },
+  { value: "Denver, CO", label: "Denver, CO", tier: "Tier 2" },
+  { value: "Atlanta, GA", label: "Atlanta, GA", tier: "Tier 2" },
+  
+  // International
+  { value: "London, UK", label: "London, UK", tier: "International" },
+  { value: "Toronto, CA", label: "Toronto, CA", tier: "International" },
+  { value: "Berlin, DE", label: "Berlin, DE", tier: "International" },
+  { value: "Amsterdam, NL", label: "Amsterdam, NL", tier: "International" },
+  { value: "Tel Aviv, IL", label: "Tel Aviv, IL", tier: "International" },
+  { value: "Singapore", label: "Singapore", tier: "International" },
+];
 
 interface FilterPanelProps {
   filters: {
@@ -10,6 +70,7 @@ interface FilterPanelProps {
     industry: string;
     companySize: string;
     priority: string;
+    location?: string;
     minScore?: number;
   };
   onFiltersChange: (filters: any) => void;
@@ -76,10 +137,47 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
               <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
             </div>
             
-            <Button variant="outline">
-              <Filter className="w-4 h-4 mr-2" />
-              More Filters
-            </Button>
+            <Select value={filters.industry || "all"} onValueChange={(value) => handleFilterChange("industry", value === "all" ? "" : value)}>
+              <SelectTrigger className="w-48">
+                <Briefcase className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Select Industry" />
+              </SelectTrigger>
+              <SelectContent>
+                {INDUSTRY_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    <div className="flex items-center justify-between w-full">
+                      <span>{option.label}</span>
+                      {option.category !== "All" && (
+                        <Badge variant="outline" className="ml-2 text-xs">
+                          {option.category}
+                        </Badge>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={filters.location || "all"} onValueChange={(value) => handleFilterChange("location", value === "all" ? "" : value)}>
+              <SelectTrigger className="w-48">
+                <MapPin className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Select Location" />
+              </SelectTrigger>
+              <SelectContent>
+                {LOCATION_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    <div className="flex items-center justify-between w-full">
+                      <span>{option.label}</span>
+                      {option.tier !== "All" && (
+                        <Badge variant="outline" className="ml-2 text-xs">
+                          {option.tier}
+                        </Badge>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
         
