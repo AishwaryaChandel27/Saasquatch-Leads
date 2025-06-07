@@ -5,6 +5,8 @@ import { storage } from "./storage";
 import { insertLeadSchema, updateLeadSchema } from "@shared/schema";
 import { generateCompanyInsights, generateOutreachEmail } from "./lib/openai";
 import { calculateLeadScore, enrichLeadData, updateLeadPriority } from "./lib/leadScoring";
+import { calculateMLScore, classifyLeadQuality } from "./lib/mlScoring";
+import { enrichCompanyByDomain, searchLinkedInCompany, getCrunchbaseFunding } from "./lib/realWorldEnrichment";
 import { 
   prospectFromGitHub,
   prospectFromYCombinator, 
@@ -343,82 +345,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced lead enrichment with real-world data APIs
+  // Advanced ML-based lead enrichment with real-world data
   app.post("/api/leads/enrich-all", async (req, res) => {
     try {
       const leads = await storage.getLeads();
-      let enrichedCount = 0;
-      let apiEnrichedCount = 0;
+      let mlEnrichedCount = 0;
+      let webEnrichedCount = 0;
+      let linkedinEnrichedCount = 0;
+      let fundingEnrichedCount = 0;
       
       for (const lead of leads) {
-        let hasBeenEnriched = false;
+        const updates: any = {};
         
-        // Apply ML-based scoring to all leads
+        // Apply ML-based scoring algorithm
         if (!lead.isEnriched) {
-          const enrichedLead = enrichLeadData(lead);
-          await storage.updateLead(lead.id, {
-            score: enrichedLead.score,
-            priority: enrichedLead.priority,
-            isEnriched: true
-          });
-          hasBeenEnriched = true;
-          enrichedCount++;
+          const mlResult = calculateMLScore(lead);
+          const classification = classifyLeadQuality(mlResult.score, mlResult.confidence);
+          
+          updates.score = mlResult.score;
+          updates.priority = classification.priority;
+          updates.isEnriched = true;
+          mlEnrichedCount++;
+          
+          console.log(`ML scoring for ${lead.companyName}: ${mlResult.score}/100 (${classification.quality})`);
         }
         
-        // Enrich with real-world data for companies with websites
+        // Enrich with real-world website data
         if (lead.website && !lead.aiInsights) {
           try {
-            const enrichmentData = await enrichCompanyFromDomain(lead.website);
-            if (enrichmentData) {
-              // Update lead with enriched company data
-              const updatedData: any = {};
-              
-              if (enrichmentData.companyInfo?.description) {
-                updatedData.description = enrichmentData.companyInfo.description;
+            const webData = await enrichCompanyByDomain(lead.website);
+            if (webData?.companyInfo) {
+              if (webData.companyInfo.description) {
+                updates.description = webData.companyInfo.description;
+              }
+              if (webData.companyInfo.employeeCount) {
+                updates.employeeCount = webData.companyInfo.employeeCount;
+              }
+              if (webData.companyInfo.location) {
+                updates.location = webData.companyInfo.location;
+              }
+              if (webData.techData?.technologies) {
+                updates.techStack = webData.techData.technologies;
               }
               
-              if (enrichmentData.companyInfo?.employeeCount) {
-                updatedData.employeeCount = enrichmentData.companyInfo.employeeCount;
-              }
-              
-              if (enrichmentData.companyInfo?.techStack) {
-                updatedData.techStack = enrichmentData.companyInfo.techStack;
-              }
-              
-              if (enrichmentData.companyInfo?.fundingInfo) {
-                updatedData.fundingInfo = enrichmentData.companyInfo.fundingInfo;
-              }
-              
-              // Generate AI insights based on enriched data
-              const insights = await generateCompanyInsights(lead.companyName, {
-                industry: lead.industry,
-                size: lead.companySize,
-                techStack: updatedData.techStack || lead.techStack || [],
-                funding: updatedData.fundingInfo || lead.fundingInfo || '',
-                description: updatedData.description || ''
-              });
-              
-              updatedData.aiInsights = insights;
-              
-              await storage.updateLead(lead.id, updatedData);
-              apiEnrichedCount++;
-              hasBeenEnriched = true;
+              webEnrichedCount++;
+              console.log(`Web enrichment for ${lead.companyName}: ${Object.keys(webData.companyInfo).length} data points`);
             }
           } catch (error) {
-            console.error(`API enrichment failed for ${lead.companyName}:`, error);
+            console.error(`Web enrichment failed for ${lead.companyName}:`, error);
           }
+        }
+        
+        // Enrich with LinkedIn company data
+        if (!lead.description) {
+          try {
+            const linkedinData = await searchLinkedInCompany(lead.companyName);
+            if (linkedinData.description) {
+              updates.description = linkedinData.description;
+              linkedinEnrichedCount++;
+              console.log(`LinkedIn enrichment for ${lead.companyName}: Added company description`);
+            }
+          } catch (error) {
+            console.error(`LinkedIn enrichment failed for ${lead.companyName}:`, error);
+          }
+        }
+        
+        // Enrich with Crunchbase funding data
+        if (!lead.fundingInfo) {
+          try {
+            const fundingData = await getCrunchbaseFunding(lead.companyName);
+            if (fundingData?.lastRound) {
+              updates.fundingInfo = `${fundingData.lastRound} - ${fundingData.totalFunding}`;
+              fundingEnrichedCount++;
+              console.log(`Funding enrichment for ${lead.companyName}: ${fundingData.lastRound}`);
+            }
+          } catch (error) {
+            console.error(`Funding enrichment failed for ${lead.companyName}:`, error);
+          }
+        }
+        
+        // Generate AI insights if we have enough data
+        if ((updates.description || updates.techStack) && !lead.aiInsights) {
+          try {
+            const insights = await generateCompanyInsights(lead.companyName, {
+              industry: lead.industry,
+              size: lead.companySize,
+              techStack: updates.techStack || lead.techStack || [],
+              funding: updates.fundingInfo || lead.fundingInfo || '',
+              description: updates.description || lead.description || ''
+            });
+            updates.aiInsights = insights;
+          } catch (error) {
+            console.error(`AI insights generation failed for ${lead.companyName}:`, error);
+          }
+        }
+        
+        // Apply all updates
+        if (Object.keys(updates).length > 0) {
+          await storage.updateLead(lead.id, updates);
         }
       }
       
       res.json({
-        message: `Successfully enriched ${enrichedCount} leads with scoring${apiEnrichedCount > 0 ? ` and ${apiEnrichedCount} with real-world data` : ''}`,
-        enrichedCount,
-        apiEnrichedCount,
-        totalLeads: leads.length
+        message: `Advanced enrichment completed: ${mlEnrichedCount} ML scored, ${webEnrichedCount} web enriched, ${linkedinEnrichedCount} LinkedIn enriched, ${fundingEnrichedCount} funding enriched`,
+        enrichmentStats: {
+          mlEnrichedCount,
+          webEnrichedCount,
+          linkedinEnrichedCount,
+          fundingEnrichedCount,
+          totalLeads: leads.length
+        }
       });
     } catch (error) {
-      console.error("Lead enrichment error:", error);
-      res.status(500).json({ message: "Failed to enrich leads" });
+      console.error("Advanced enrichment error:", error);
+      res.status(500).json({ message: "Failed to perform advanced lead enrichment" });
     }
   });
 
