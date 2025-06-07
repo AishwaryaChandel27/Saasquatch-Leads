@@ -3,7 +3,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, Star, Building, Clock, MapPin, Briefcase } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Search, Filter, Star, Building, Clock, MapPin, Briefcase, ExternalLink, Globe, Users, DollarSign } from "lucide-react";
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 // Enhanced industry categories for advanced filtering
 const INDUSTRY_OPTIONS = [
@@ -77,6 +83,41 @@ interface FilterPanelProps {
 }
 
 export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
+  const [companySearch, setCompanySearch] = useState<string>('');
+  const [companyDetails, setCompanyDetails] = useState<any>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { toast } = useToast();
+
+  const companySearchMutation = useMutation({
+    mutationFn: async (companyName: string) => {
+      const response = await apiRequest("POST", "/api/companies/search", { companyName });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setCompanyDetails(data);
+      setIsDialogOpen(true);
+    },
+    onError: () => {
+      toast({
+        title: "Search Failed",
+        description: "Could not find company details. Please try a different name.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCompanySearch = () => {
+    if (!companySearch.trim()) {
+      toast({
+        title: "Company Name Required",
+        description: "Please enter a company name to search",
+        variant: "destructive",
+      });
+      return;
+    }
+    companySearchMutation.mutate(companySearch.trim());
+  };
+
   const handleFilterChange = (key: string, value: any) => {
     onFiltersChange({ ...filters, [key]: value });
   };
