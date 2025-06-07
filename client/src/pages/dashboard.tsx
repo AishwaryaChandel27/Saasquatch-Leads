@@ -177,6 +177,11 @@ export default function Dashboard() {
           
           {/* Right Sidebar - Stack vertically on mobile, side by side on xl */}
           <div className="xl:col-span-5 order-2 space-y-6">
+            {/* Scoring System Overview */}
+            <div className="w-full">
+              <ScoringQuickOverview />
+            </div>
+            
             {/* Prospecting Panel */}
             <div className="w-full">
               <LeadProspectingPanel 
