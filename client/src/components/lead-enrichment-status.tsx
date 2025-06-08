@@ -33,9 +33,9 @@ export function LeadEnrichmentStatus({ lead, onEnrich }: LeadEnrichmentStatusPro
     },
     {
       name: "Crunchbase Funding",
-      status: lead.fundingStage ? "completed" : "pending", 
+      status: lead.fundingInfo ? "completed" : "pending", 
       icon: DollarSign,
-      data: lead.fundingStage || "Funding data not available"
+      data: lead.fundingInfo || "Funding data not available"
     },
     {
       name: "Tech Stack Analysis",
@@ -138,7 +138,7 @@ export function LeadEnrichmentStatus({ lead, onEnrich }: LeadEnrichmentStatusPro
             </div>
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">Tech Fit</p>
-              <p className="font-medium text-sm">{getTechFitWeight(lead.techStack)}% weight</p>
+              <p className="font-medium text-sm">{getTechFitWeight(lead.techStack || undefined)}% weight</p>
             </div>
           </div>
         </div>

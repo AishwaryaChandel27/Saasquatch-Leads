@@ -125,11 +125,13 @@ export function TargetProfileMatcher({ lead }: TargetProfileMatcherProps) {
       icon: DollarSign,
       matcher: (lead) => {
         const fundedStages = ['Series A', 'Series B', 'Series C', 'IPO', 'Acquired'];
-        const hasFunding = lead.fundingStage && fundedStages.includes(lead.fundingStage);
+        const hasFunding = lead.fundingInfo && fundedStages.some(stage => lead.fundingInfo?.includes(stage));
         
         let score = 0;
-        if (lead.fundingStage) {
-          switch (lead.fundingStage) {
+        if (lead.fundingInfo) {
+          // Extract funding stage from funding info string
+          const fundingStage = fundedStages.find(stage => lead.fundingInfo?.includes(stage));
+          switch (fundingStage) {
             case 'IPO':
             case 'Acquired':
               score = 100;
@@ -159,8 +161,8 @@ export function TargetProfileMatcher({ lead }: TargetProfileMatcherProps) {
         
         return {
           matches: hasFunding || false,
-          reason: lead.fundingStage 
-            ? `${lead.fundingStage} indicates available capital`
+          reason: lead.fundingInfo 
+            ? `${lead.fundingInfo} indicates available capital`
             : 'Funding status unknown',
           score
         };
