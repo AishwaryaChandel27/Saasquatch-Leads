@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Search, Users, Building, MapPin, Mail, Phone, Globe, Brain, Loader2, FileText } from "lucide-react";
+import { Search, Users, Building, Building2, MapPin, Mail, Phone, Globe, Brain, Loader2, FileText } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { Lead } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("");
+  const [selectedCompanyType, setSelectedCompanyType] = useState("");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -59,9 +60,16 @@ export default function Dashboard() {
         }
       }
 
+      // Company type filter
+      if (selectedCompanyType && selectedCompanyType !== "all") {
+        if ((lead as any).companyType !== selectedCompanyType) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [leads, searchTerm, selectedLocation, selectedIndustry]);
+  }, [leads, searchTerm, selectedLocation, selectedIndustry, selectedCompanyType]);
 
   // Get unique locations and industries for filter options
   const uniqueLocations = useMemo(() => {
@@ -72,6 +80,11 @@ export default function Dashboard() {
   const uniqueIndustries = useMemo(() => {
     const industries = Array.from(new Set(leads.map((lead: Lead) => lead.industry)));
     return industries.sort();
+  }, [leads]);
+
+  const uniqueCompanyTypes = useMemo(() => {
+    const types = Array.from(new Set(leads.map((lead: any) => lead.companyType || "enterprise")));
+    return types.sort();
   }, [leads]);
 
   // AI Analysis mutation
@@ -143,6 +156,24 @@ export default function Dashboard() {
                   {uniqueIndustries.map((industry) => (
                     <SelectItem key={industry} value={industry}>
                       {industry}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Company Type Filter */}
+            <div className="flex items-center space-x-2">
+              <Building2 className="h-4 w-4 text-gray-500" />
+              <Select value={selectedCompanyType} onValueChange={setSelectedCompanyType}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="All Company Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Company Types</SelectItem>
+                  {uniqueCompanyTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
                     </SelectItem>
                   ))}
                 </SelectContent>
