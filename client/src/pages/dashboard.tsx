@@ -2,43 +2,23 @@ import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/header";
 import { StatsCards } from "@/components/stats-cards";
 import { LeadsList } from "@/components/leads-list";
-import { LeadQualityAnalytics } from "@/components/lead-quality-analytics";
-import { LeadProspectingPanel } from "@/components/lead-prospecting-panel";
-import { AdvancedFilters } from "@/components/advanced-filters";
-import { ScoringQuickOverview } from "@/components/scoring-quick-overview";
 import { LeadInsightsDashboard } from "@/components/lead-insights-dashboard";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search, Filter } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { Lead } from "@shared/schema";
 
-interface FilterCriteria {
+interface SimpleFilters {
   search: string;
-  industries: string[];
-  companySizes: string[];
-  locations: string[];
-  jobTitles: string[];
-  scoreRange: [number, number];
-  priority: string[];
-  techStack: string[];
-  fundingStage: string[];
-  recentActivity: boolean;
-  aiEnriched: boolean;
+  scoreFilter: 'all' | 'high' | 'medium' | 'low';
 }
 
 export default function Dashboard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [filters, setFilters] = useState<FilterCriteria>({
+  const [filters, setFilters] = useState<SimpleFilters>({
     search: "",
-    industries: [],
-    companySizes: [],
-    locations: [],
-    jobTitles: [],
-    scoreRange: [0, 100],
-    priority: [],
-    techStack: [],
-    fundingStage: [],
-    recentActivity: false,
-    aiEnriched: false
+    scoreFilter: 'all'
   });
 
   const { data: allLeads, isLoading } = useQuery({
