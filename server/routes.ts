@@ -8,6 +8,7 @@ import { generateCompanyAnalysis } from "./lib/aiAnalysis";
 import { calculateLeadScore, updateLeadPriority } from "./lib/leadScoring";
 import { calculateMLScore, classifyLeadQuality } from "./lib/mlScoring";
 import { aggregateRealWorldData } from "./lib/realWorldData";
+import { prospectGlobalLeads, getAvailableIndustries, getAvailableLocations, getAvailableCompanySizes } from "./lib/globalLeadProspecting";
 import { enrichCompanyWithClearbit, calculateClearbitScore, categorizeClearbitPriority } from "./lib/clearbit";
 import { calculateAdvancedLeadScore, enrichLeadWithAdvancedScoring } from "./lib/advancedLeadScoring";
 import { enrichLeadData, calculateEnrichmentScore } from "./lib/leadEnrichment";
@@ -760,13 +761,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Enrich with real-world website data
         if (lead.website && !lead.aiInsights) {
           try {
-            const webData = await enrichCompanyByDomain(lead.website);
-            if (webData?.companyInfo) {
-              if (webData.companyInfo.description) {
-                updates.description = webData.companyInfo.description;
+            const webData = await aggregateRealWorldData(lead.companyName, lead.website);
+            if (webData?.basicInfo) {
+              if (webData.basicInfo.description) {
+                updates.description = webData.basicInfo.description;
               }
-              if (webData.companyInfo.employeeCount) {
-                updates.employeeCount = webData.companyInfo.employeeCount;
+              if (webData.businessMetrics.employeeCount) {
+                updates.employeeCount = webData.businessMetrics.employeeCount;
               }
               if (webData.companyInfo.location) {
                 updates.location = webData.companyInfo.location;
