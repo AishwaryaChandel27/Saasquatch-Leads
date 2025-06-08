@@ -398,7 +398,8 @@ export class MemStorage implements IStorage {
       website: insertLead.website || null,
       score: 0,
       priority: insertLead.priority || "cold",
-      techStack: Array.isArray(insertLead.techStack) ? insertLead.techStack : (insertLead.techStack ? [insertLead.techStack] : null) as string[] | null,
+      techStack: Array.isArray(insertLead.techStack) ? insertLead.techStack as string[] : 
+                 (typeof insertLead.techStack === 'string' ? [insertLead.techStack] : null),
       aiInsights: insertLead.aiInsights || null,
       fundingInfo: insertLead.fundingInfo || null,
       employeeCount: insertLead.employeeCount || null,
@@ -407,6 +408,7 @@ export class MemStorage implements IStorage {
       budgetRange: insertLead.budgetRange || null,
       decisionTimeline: insertLead.decisionTimeline || null,
       isEnriched: false,
+      companyType: insertLead.companyType || "enterprise",
     };
     this.leads.set(id, lead);
     return lead;
@@ -418,7 +420,14 @@ export class MemStorage implements IStorage {
       return undefined;
     }
 
-    const updatedLead: Lead = { ...existingLead, ...updateLead };
+    const updatedLead: Lead = { 
+      ...existingLead, 
+      ...updateLead,
+      techStack: updateLead.techStack !== undefined ? 
+        (Array.isArray(updateLead.techStack) ? updateLead.techStack as string[] : 
+         typeof updateLead.techStack === 'string' ? [updateLead.techStack] : null) :
+        existingLead.techStack
+    };
     this.leads.set(id, updatedLead);
     return updatedLead;
   }

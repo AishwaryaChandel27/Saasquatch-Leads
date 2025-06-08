@@ -65,7 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Calculate initial score
       const enrichedLead = enrichLeadData(lead);
-      await storage.updateLead(lead.id, enrichedLead);
+      const updatedLead = await storage.updateLead(lead.id, { score: enrichedLead.score });
       
       res.status(201).json(enrichedLead);
     } catch (error) {
@@ -820,14 +820,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Generate AI insights if we have enough data
-        if ((updates.description || updates.techStack) && !lead.aiInsights) {
+        if (updates.techStack && !lead.aiInsights) {
           try {
             const insights = await generateCompanyInsights(lead.companyName, {
               industry: lead.industry,
               size: lead.companySize,
               techStack: updates.techStack || lead.techStack || [],
-              funding: updates.fundingInfo || lead.fundingInfo || '',
-              description: updates.description || lead.description || ''
+              funding: updates.fundingInfo || lead.fundingInfo || ''
             });
             updates.aiInsights = insights;
           } catch (error) {

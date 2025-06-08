@@ -15,7 +15,7 @@ export const leads = pgTable("leads", {
   website: text("website"),
   score: integer("score").notNull().default(0),
   priority: text("priority").notNull().default("cold"),
-  techStack: jsonb("tech_stack").$type<string[]>().default([]),
+  techStack: jsonb("tech_stack").$type<string[] | null>().default(null),
   aiInsights: text("ai_insights"),
   fundingInfo: text("funding_info"),
   employeeCount: integer("employee_count"),
