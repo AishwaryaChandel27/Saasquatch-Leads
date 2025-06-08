@@ -16,6 +16,8 @@ import {
   Star
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { LeadEnrichmentStatus } from "@/components/lead-enrichment-status";
+import { TargetProfileMatcher } from "@/components/target-profile-matcher";
 import type { Lead } from "@shared/schema";
 
 interface LeadInsightsDashboardProps {
@@ -178,12 +180,34 @@ export function LeadInsightsDashboard({ selectedLead }: LeadInsightsDashboardPro
   // Selected lead detailed analysis
   return (
     <div className="space-y-6">
+      {/* Target Profile Match */}
+      <TargetProfileMatcher lead={selectedLead} />
+      
+      {/* Data Enrichment Status */}
+      <LeadEnrichmentStatus 
+        lead={selectedLead} 
+        onEnrich={async (leadId) => {
+          // Trigger enrichment process
+          try {
+            const response = await fetch(`/api/leads/${leadId}/enrich`, {
+              method: 'POST',
+            });
+            if (response.ok) {
+              // Refresh lead data
+              window.location.reload();
+            }
+          } catch (error) {
+            console.error('Enrichment failed:', error);
+          }
+        }}
+      />
+
       {/* Lead Profile */}
       <Card className="card-premium">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Building2 className="h-5 w-5 text-primary" />
-            <span>{selectedLead.companyName} Analysis</span>
+            <span>{selectedLead.companyName} Contact Details</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -261,32 +285,6 @@ export function LeadInsightsDashboard({ selectedLead }: LeadInsightsDashboardPro
                 <span className="text-sm font-bold">{selectedLead.score}/100</span>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Engagement Recommendations */}
-      <Card className="card-premium">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Target className="h-5 w-5 text-success" />
-            <span>Engagement Strategy</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {getEngagementRecommendations(selectedLead).map((rec, index) => (
-              <div key={index} className="flex items-start space-x-3 p-3 bg-muted/30 rounded-lg">
-                <div className={`w-2 h-2 rounded-full mt-2 ${rec.priority === 'high' ? 'bg-success' : rec.priority === 'medium' ? 'bg-warning' : 'bg-muted-foreground'}`}></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{rec.action}</p>
-                  <p className="text-xs text-muted-foreground">{rec.reason}</p>
-                </div>
-                <Badge variant={rec.priority === 'high' ? 'default' : 'secondary'} className="text-xs">
-                  {rec.priority}
-                </Badge>
-              </div>
-            ))}
           </div>
         </CardContent>
       </Card>

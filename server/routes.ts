@@ -458,6 +458,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Lead enrichment endpoints
+  app.post("/api/leads/:id/enrich", async (req, res) => {
+    try {
+      const leadId = parseInt(req.params.id);
+      const lead = await storage.getLead(leadId);
+      
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+
+      // Simulate enrichment from multiple public sources
+      const enrichmentData = await enrichFromPublicSources(lead);
+      
+      // Update lead with enriched data
+      const updatedLead = await storage.updateLead(leadId, {
+        ...enrichmentData,
+        isEnriched: true
+      });
+
+      res.json({
+        success: true,
+        lead: updatedLead,
+        enrichmentSources: enrichmentData.sources || [],
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Lead enrichment failed:", error);
+      res.status(500).json({ 
+        error: "Enrichment failed", 
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Batch enrichment for multiple leads
+  app.post("/api/leads/batch-enrich", async (req, res) => {
+    try {
+      const { leadIds } = req.body;
+      
+      if (!Array.isArray(leadIds)) {
+        return res.status(400).json({ error: "leadIds must be an array" });
+      }
+
+      const results = [];
+      for (const leadId of leadIds) {
+        try {
+          const lead = await storage.getLead(leadId);
+          if (lead) {
+            const enrichmentData = await enrichFromPublicSources(lead);
+            const updatedLead = await storage.updateLead(leadId, {
+              ...enrichmentData,
+              isEnriched: true
+            });
+            results.push({ leadId, success: true, lead: updatedLead });
+          } else {
+            results.push({ leadId, success: false, error: "Lead not found" });
+          }
+        } catch (error) {
+          results.push({ 
+            leadId, 
+            success: false, 
+            error: error instanceof Error ? error.message : "Unknown error" 
+          });
+        }
+      }
+
+      res.json({
+        success: true,
+        results,
+        enrichedCount: results.filter(r => r.success).length,
+        totalCount: leadIds.length,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Batch enrichment failed:", error);
+      res.status(500).json({ 
+        error: "Batch enrichment failed",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Export leads to CSV
   app.get("/api/leads/export/csv", async (req, res) => {
     try {
