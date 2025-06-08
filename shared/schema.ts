@@ -13,6 +13,7 @@ export const leads = pgTable("leads", {
   industry: text("industry").notNull(),
   location: text("location").notNull(),
   website: text("website"),
+  linkedinUrl: text("linkedin_url"),
   score: integer("score").notNull().default(0),
   priority: text("priority").notNull().default("cold"),
   techStack: jsonb("tech_stack").$type<string[] | null>().default(null),

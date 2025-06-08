@@ -905,6 +905,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Global lead prospecting with quantity selection
+  app.post("/api/leads/prospect-global", async (req, res) => {
+    try {
+      const { industry, companySize, location, limit = 10, sources = ['linkedin', 'github', 'crunchbase', 'news'] } = req.body;
+      
+      console.log(`Starting global lead prospecting: ${limit} leads from ${sources.join(', ')}`);
+      
+      const prospectingOptions = {
+        industry,
+        companySize,
+        location,
+        limit: Math.min(limit, 50), // Cap at 50 for performance
+        sources
+      };
+      
+      const result = await prospectGlobalLeads(prospectingOptions);
+      
+      // Store the leads in our database
+      const storedLeads = [];
+      for (const leadData of result.leads) {
+        try {
+          const storedLead = await storage.createLead(leadData);
+          storedLeads.push(storedLead);
+        } catch (error) {
+          console.warn(`Failed to store lead: ${leadData.companyName}`, error);
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: `Successfully prospected ${storedLeads.length} leads from global sources`,
+        data: {
+          leads: storedLeads,
+          totalFound: result.totalFound,
+          sourcesUsed: result.sources,
+          industriesFound: result.industries,
+          prospectingOptions
+        }
+      });
+    } catch (error) {
+      console.error('Global prospecting error:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to prospect global leads",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Get prospecting options for dropdowns
+  app.get("/api/leads/prospect-options", async (req, res) => {
+    try {
+      res.json({
+        industries: getAvailableIndustries(),
+        locations: getAvailableLocations(),
+        companySizes: getAvailableCompanySizes(),
+        leadQuantities: [5, 10, 15, 30, 50],
+        sources: [
+          { id: 'linkedin', name: 'LinkedIn Companies', enabled: true },
+          { id: 'github', name: 'GitHub Organizations', enabled: true },
+          { id: 'crunchbase', name: 'Crunchbase Startups', enabled: true },
+          { id: 'news', name: 'News Sources', enabled: true }
+        ]
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch prospecting options" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
