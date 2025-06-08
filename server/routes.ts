@@ -540,6 +540,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI-powered company analysis endpoint
+  app.post("/api/leads/:id/analyze", async (req, res) => {
+    try {
+      const leadId = parseInt(req.params.id);
+      const lead = await storage.getLead(leadId);
+      
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+
+      const { generateCompanyAnalysis } = await import("./lib/aiAnalysis");
+      const analysis = await generateCompanyAnalysis(lead);
+
+      res.json({
+        success: true,
+        leadId,
+        analysis,
+        generatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("AI analysis failed:", error);
+      res.status(500).json({ 
+        error: "Analysis generation failed", 
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Export leads to CSV
   app.get("/api/leads/export/csv", async (req, res) => {
     try {

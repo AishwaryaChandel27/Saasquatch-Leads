@@ -1,19 +1,25 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/components/header-simple";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, Building, MapPin, Mail, Phone, Globe, Filter } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Search, Users, Building, MapPin, Mail, Phone, Globe, Brain, Loader2, FileText } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { Lead } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [analysisOpen, setAnalysisOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: leads = [], isLoading } = useQuery({
     queryKey: ["/api/leads"],
@@ -67,6 +73,19 @@ export default function Dashboard() {
     const industries = Array.from(new Set(leads.map((lead: Lead) => lead.industry)));
     return industries.sort();
   }, [leads]);
+
+  // AI Analysis mutation
+  const analysisMutation = useMutation({
+    mutationFn: async (leadId: number) => {
+      const response = await apiRequest(`/api/leads/${leadId}/analyze`, {
+        method: "POST"
+      });
+      return response;
+    },
+    onSuccess: () => {
+      setAnalysisOpen(true);
+    }
+  });
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return "bg-green-500";
