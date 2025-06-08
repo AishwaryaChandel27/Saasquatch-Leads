@@ -4,12 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Users, Building, MapPin, Mail, Phone, Globe } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Users, Building, MapPin, Mail, Phone, Globe, Filter } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { Lead } from "@shared/schema";
 
 export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedIndustry, setSelectedIndustry] = useState("");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   const { data: leads = [], isLoading } = useQuery({
@@ -22,19 +25,48 @@ export default function Dashboard() {
   });
 
   const filteredLeads = useMemo(() => {
-    if (!searchTerm) return leads;
-    
     return leads.filter((lead: Lead) => {
-      const search = searchTerm.toLowerCase();
-      return [
-        lead.companyName,
-        lead.contactName,
-        lead.jobTitle,
-        lead.industry,
-        lead.location
-      ].some(field => field.toLowerCase().includes(search));
+      // Search term filter
+      if (searchTerm) {
+        const search = searchTerm.toLowerCase();
+        const matchesSearch = [
+          lead.companyName,
+          lead.contactName,
+          lead.jobTitle,
+          lead.industry,
+          lead.location
+        ].some(field => field.toLowerCase().includes(search));
+        if (!matchesSearch) return false;
+      }
+
+      // Location filter
+      if (selectedLocation && selectedLocation !== "all") {
+        if (!lead.location.toLowerCase().includes(selectedLocation.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // Industry filter
+      if (selectedIndustry && selectedIndustry !== "all") {
+        if (lead.industry !== selectedIndustry) {
+          return false;
+        }
+      }
+
+      return true;
     });
-  }, [leads, searchTerm]);
+  }, [leads, searchTerm, selectedLocation, selectedIndustry]);
+
+  // Get unique locations and industries for filter options
+  const uniqueLocations = useMemo(() => {
+    const locations = Array.from(new Set(leads.map((lead: Lead) => lead.location)));
+    return locations.sort();
+  }, [leads]);
+
+  const uniqueIndustries = useMemo(() => {
+    const industries = Array.from(new Set(leads.map((lead: Lead) => lead.industry)));
+    return industries.sort();
+  }, [leads]);
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return "bg-green-500";
@@ -47,16 +79,60 @@ export default function Dashboard() {
       <Header />
       
       <main className="container mx-auto px-4 py-6 max-w-6xl">
-        {/* Simple Search */}
+        {/* Search and Filters */}
         <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search leads..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            {/* Search Input */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search leads..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            {/* Location Filter */}
+            <div className="flex items-center space-x-2">
+              <MapPin className="h-4 w-4 text-gray-500" />
+              <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="All Locations" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Locations</SelectItem>
+                  {uniqueLocations.map((location) => (
+                    <SelectItem key={location} value={location}>
+                      {location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Industry Filter */}
+            <div className="flex items-center space-x-2">
+              <Building className="h-4 w-4 text-gray-500" />
+              <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="All Industries" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Industries</SelectItem>
+                  {uniqueIndustries.map((industry) => (
+                    <SelectItem key={industry} value={industry}>
+                      {industry}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Results Count */}
+            <div className="text-sm text-gray-500 whitespace-nowrap">
+              {filteredLeads.length} lead{filteredLeads.length !== 1 ? 's' : ''}
+            </div>
           </div>
         </div>
 
