@@ -138,7 +138,7 @@ export async function enhanceLeadWithAI(companyName: string, existingData: any):
       messages: [
         {
           role: "system",
-          content: "You are a sales intelligence expert. Provide 3-5 actionable insights for prospecting this company. Focus on timing, approach strategy, and value propositions. Respond with a JSON array of strings."
+          content: "You are a sales intelligence expert. Provide 3-5 actionable insights for prospecting this company. Focus on timing, approach strategy, and value propositions. Respond with a JSON object containing an insights array."
         },
         {
           role: "user", 
@@ -154,5 +154,57 @@ export async function enhanceLeadWithAI(companyName: string, existingData: any):
   } catch (error) {
     console.error('AI enhancement error:', error);
     return [`Analysis of ${companyName} requires manual review`];
+  }
+}
+
+export async function generateCompanyInsights(companyName: string): Promise<string[]> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "Generate 5 key business insights about this company based on your knowledge. Focus on market position, growth potential, and business opportunities. Return as JSON object with insights array."
+        },
+        {
+          role: "user",
+          content: `Company: ${companyName}`
+        }
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 600,
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || '{"insights": []}');
+    return result.insights || [`${companyName} requires further analysis`];
+  } catch (error) {
+    console.error('Company insights error:', error);
+    return [`Unable to generate insights for ${companyName}`];
+  }
+}
+
+export async function generateOutreachEmail(companyName: string, contactName: string, jobTitle: string): Promise<string> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "Generate a personalized B2B outreach email. Be professional, concise, and value-focused. Return as JSON object with 'subject' and 'body' fields."
+        },
+        {
+          role: "user",
+          content: `Create an outreach email for ${contactName}, ${jobTitle} at ${companyName}. Focus on business growth and efficiency solutions.`
+        }
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 400,
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || '{"subject": "Business Partnership Opportunity", "body": "Professional outreach email"}');
+    return `Subject: ${result.subject}\n\n${result.body}`;
+  } catch (error) {
+    console.error('Outreach email error:', error);
+    return `Subject: Partnership Opportunity with ${companyName}\n\nHi ${contactName},\n\nI hope this email finds you well. I'd love to discuss how we can help ${companyName} achieve its growth objectives.\n\nBest regards`;
   }
 }

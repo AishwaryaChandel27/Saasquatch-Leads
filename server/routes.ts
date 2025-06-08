@@ -4,9 +4,10 @@ import { z } from "zod";
 import { storage } from "./storage";
 import { insertLeadSchema, updateLeadSchema } from "@shared/schema";
 import { generateCompanyInsights, generateOutreachEmail } from "./lib/openai";
+import { generateCompanyAnalysis } from "./lib/aiAnalysis";
 import { calculateLeadScore, updateLeadPriority } from "./lib/leadScoring";
 import { calculateMLScore, classifyLeadQuality } from "./lib/mlScoring";
-import { enrichCompanyByDomain, searchLinkedInCompany, getCrunchbaseFunding } from "./lib/realWorldEnrichment";
+import { aggregateRealWorldData } from "./lib/realWorldData";
 import { enrichCompanyWithClearbit, calculateClearbitScore, categorizeClearbitPriority } from "./lib/clearbit";
 import { calculateAdvancedLeadScore, enrichLeadWithAdvancedScoring } from "./lib/advancedLeadScoring";
 import { enrichLeadData, calculateEnrichmentScore } from "./lib/leadEnrichment";
@@ -153,16 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const enhancedScoring = calculateEnhancedScore(lead);
       
       // Generate AI insights
-      const aiInsights = await generateCompanyInsights(
-        lead.companyName,
-        lead.industry,
-        lead.companySize,
-        lead.contactName,
-        lead.jobTitle,
-        lead.techStack || undefined,
-        lead.fundingInfo || undefined,
-        lead.recentActivity || undefined
-      ).catch(() => null);
+      const aiInsights = await generateCompanyInsights(lead.companyName).catch(() => null);
 
       const analysis = {
         leadId,
@@ -881,6 +873,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  // Generate comprehensive company analysis report with real-world data
+  app.post("/api/leads/:id/analysis", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const lead = await storage.getLead(id);
+      
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+
+      console.log(`Generating comprehensive analysis for ${lead.companyName}...`);
+      const analysisReport = await generateCompanyAnalysis(lead);
+      
+      res.json({
+        leadId: id,
+        companyName: lead.companyName,
+        generatedAt: new Date().toISOString(),
+        report: analysisReport
+      });
+    } catch (error) {
+      console.error('Company analysis error:', error);
+      res.status(500).json({ 
+        message: "Failed to generate company analysis",
+        error: error instanceof Error ? error.message : "Analysis service temporarily unavailable"
+      });
     }
   });
 
