@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Search, Users, Building, Building2, MapPin, Mail, Phone, Globe, Brain, Loader2, FileText } from "lucide-react";
+import { Search, Users, Building, MapPin, Mail, Phone, Globe, Brain, Loader2, FileText, Factory } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { Lead } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -164,7 +164,7 @@ export default function Dashboard() {
 
             {/* Company Type Filter */}
             <div className="flex items-center space-x-2">
-              <Building2 className="h-4 w-4 text-gray-500" />
+              <Factory className="h-4 w-4 text-gray-500" />
               <Select value={selectedCompanyType} onValueChange={setSelectedCompanyType}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="All Company Types" />
