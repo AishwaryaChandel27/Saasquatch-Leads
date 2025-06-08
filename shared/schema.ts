@@ -24,6 +24,7 @@ export const leads = pgTable("leads", {
   budgetRange: text("budget_range"),
   decisionTimeline: text("decision_timeline"),
   isEnriched: boolean("is_enriched").default(false),
+  companyType: text("company_type").notNull().default("enterprise"),
 });
 
 export const insertLeadSchema = createInsertSchema(leads).omit({
