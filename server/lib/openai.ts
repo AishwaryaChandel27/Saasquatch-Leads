@@ -1,154 +1,158 @@
 import OpenAI from "openai";
-import type { AIInsights } from "@shared/schema";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || "your-openai-api-key-here"
-});
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-export async function generateCompanyInsights(
-  companyName: string,
-  industry: string,
-  companySize: string,
-  contactName: string,
-  jobTitle: string,
-  techStack?: string[],
-  fundingInfo?: string,
-  recentActivity?: string
-): Promise<AIInsights> {
-  try {
-    const prompt = `
-Analyze the following company and contact information to provide sales insights:
-
-Company: ${companyName}
-Industry: ${industry}
-Company Size: ${companySize}
-Contact: ${contactName} - ${jobTitle}
-${techStack ? `Tech Stack: ${techStack.join(", ")}` : ""}
-${fundingInfo ? `Funding Info: ${fundingInfo}` : ""}
-${recentActivity ? `Recent Activity: ${recentActivity}` : ""}
-
-Please provide a comprehensive sales analysis in JSON format with the following structure:
-{
-  "summary": "A concise 2-3 sentence summary of the company's profile and sales potential",
-  "buyingIntent": "high" | "medium" | "low" | "unknown",
-  "budgetRange": "Estimated budget range (e.g., '$10K - $50K')",
-  "decisionTimeline": "Estimated decision timeline (e.g., 'Q1 2024')",
-  "keyInsights": ["Array of 2-3 key insights about the company's needs or situation"],
-  "recommendedApproach": "Recommended sales approach or talking points for this prospect"
+export interface CompanyAnalysisPrompt {
+  companyName: string;
+  domain?: string;
+  industry?: string;
+  description?: string;
+  website?: string;
+  additionalData?: string;
 }
 
-Base your analysis on:
-- Company size and likely budget capacity
-- Industry trends and typical tech needs
-- Contact's role and decision-making authority
-- Tech stack compatibility and integration opportunities
-- Funding status indicating growth phase and spending capacity
-- Recent activity showing engagement level
-`;
+export interface AIAnalysisResult {
+  executiveTeam: {
+    ceo: string;
+    cto: string;
+    cfo: string;
+    keyDecisionMakers: string[];
+    linkedinProfiles: string[];
+    contactInfo: {
+      email: string;
+      phone: string;
+    };
+  };
+  financialSummary: {
+    revenue: string;
+    employeeCount: number;
+    valuation: string;
+    fundingRounds: string[];
+    investors: string[];
+    profitability: string;
+  };
+  growthIndicators: {
+    recentFunding: string;
+    hiringTrends: string;
+    techStack: string[];
+    jobPostings: number;
+    marketExpansion: string[];
+  };
+  technographics: {
+    crm: string;
+    emailTools: string[];
+    analytics: string[];
+    hosting: string[];
+    security: string[];
+  };
+  aiRecommendations: {
+    leadQuality: string;
+    approachStrategy: string;
+    buyingSignals: string[];
+    riskFactors: string[];
+    nextSteps: string[];
+  };
+}
+
+export async function analyzeCompanyWithAI(prompt: CompanyAnalysisPrompt): Promise<AIAnalysisResult> {
+  try {
+    const systemPrompt = `You are an expert B2B sales intelligence analyst. Analyze the provided company information and generate a comprehensive business intelligence report. Focus on actionable insights for sales prospecting.
+
+Respond with valid JSON in this exact format:
+{
+  "executiveTeam": {
+    "ceo": "Name or 'Unknown'",
+    "cto": "Name or 'Unknown'",
+    "cfo": "Name or 'Unknown'",
+    "keyDecisionMakers": ["Names of key decision makers"],
+    "linkedinProfiles": ["LinkedIn URLs if available"],
+    "contactInfo": {
+      "email": "General contact email or 'Not available'",
+      "phone": "Phone number or 'Not available'"
+    }
+  },
+  "financialSummary": {
+    "revenue": "Estimated revenue or 'Not disclosed'",
+    "employeeCount": 0,
+    "valuation": "Company valuation or 'Not available'",
+    "fundingRounds": ["List of funding rounds"],
+    "investors": ["List of investors"],
+    "profitability": "Profitability status or 'Unknown'"
+  },
+  "growthIndicators": {
+    "recentFunding": "Recent funding details or 'None identified'",
+    "hiringTrends": "Hiring patterns or 'Stable'",
+    "techStack": ["Technologies used"],
+    "jobPostings": 0,
+    "marketExpansion": ["Expansion activities"]
+  },
+  "technographics": {
+    "crm": "CRM system or 'Unknown'",
+    "emailTools": ["Email marketing tools"],
+    "analytics": ["Analytics platforms"],
+    "hosting": ["Hosting providers"],
+    "security": ["Security tools"]
+  },
+  "aiRecommendations": {
+    "leadQuality": "High/Medium/Low with reasoning",
+    "approachStrategy": "Recommended approach strategy",
+    "buyingSignals": ["Identified buying signals"],
+    "riskFactors": ["Potential risks"],
+    "nextSteps": ["Recommended next steps"]
+  }
+}`;
+
+    const userPrompt = `Analyze this company:
+Company Name: ${prompt.companyName}
+Domain: ${prompt.domain || 'Not provided'}
+Industry: ${prompt.industry || 'Not provided'}
+Description: ${prompt.description || 'Not provided'}
+Website: ${prompt.website || 'Not provided'}
+Additional Data: ${prompt.additionalData || 'None'}
+
+Provide a comprehensive analysis based on your knowledge of this company.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        {
-          role: "system",
-          content: "You are an expert sales analyst with deep knowledge of B2B sales, technology markets, and buyer behavior. Provide accurate, actionable insights for sales teams.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.7,
+      max_tokens: 2000,
     });
 
-    const result = JSON.parse(response.choices[0].message.content || "{}");
-    
-    return {
-      summary: result.summary || "Analysis unavailable",
-      buyingIntent: result.buyingIntent || "unknown",
-      budgetRange: result.budgetRange,
-      decisionTimeline: result.decisionTimeline,
-      keyInsights: result.keyInsights || [],
-      recommendedApproach: result.recommendedApproach || "Contact for more information",
-    };
-
+    const result = JSON.parse(response.choices[0].message.content || '{}');
+    return result as AIAnalysisResult;
   } catch (error) {
-    console.error("Error generating AI insights:", error);
-    
-    // Return fallback insights if API fails
-    return {
-      summary: `${companyName} is a ${industry} company with ${companySize} employees. Analysis pending.`,
-      buyingIntent: "unknown",
-      budgetRange: undefined,
-      decisionTimeline: undefined,
-      keyInsights: ["Additional data needed for complete analysis"],
-      recommendedApproach: "Gather more information about company needs and priorities",
-    };
+    console.error('OpenAI analysis error:', error);
+    throw new Error(`AI analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
-export async function generateOutreachEmail(
-  contactName: string,
-  companyName: string,
-  jobTitle: string,
-  insights: AIInsights,
-  productName: string = "our solution"
-): Promise<string> {
+export async function enhanceLeadWithAI(companyName: string, existingData: any): Promise<string[]> {
   try {
-    const prompt = `
-Generate a personalized B2B sales outreach email with the following details:
-
-Recipient: ${contactName}
-Company: ${companyName}
-Job Title: ${jobTitle}
-Product/Service: ${productName}
-
-Company Insights:
-${insights.summary}
-
-Key Insights:
-${insights.keyInsights.join(", ")}
-
-Recommended Approach: ${insights.recommendedApproach}
-
-Write a professional, personalized email that:
-1. References their role and company specifically
-2. Mentions relevant insights about their industry/situation
-3. Provides clear value proposition
-4. Includes a soft call-to-action
-5. Is concise (under 150 words)
-6. Feels personal, not templated
-
-Format as plain text email (no HTML).
-`;
-
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: "You are an expert sales copywriter who creates highly personalized, effective B2B outreach emails that get responses.",
+          content: "You are a sales intelligence expert. Provide 3-5 actionable insights for prospecting this company. Focus on timing, approach strategy, and value propositions. Respond with a JSON array of strings."
         },
         {
-          role: "user",
-          content: prompt,
-        },
+          role: "user", 
+          content: `Company: ${companyName}\nExisting data: ${JSON.stringify(existingData)}\n\nProvide prospecting insights.`
+        }
       ],
-      temperature: 0.8,
+      response_format: { type: "json_object" },
+      max_tokens: 500,
     });
 
-    return response.choices[0].message.content || "Email generation failed";
-
+    const result = JSON.parse(response.choices[0].message.content || '{"insights": []}');
+    return result.insights || [];
   } catch (error) {
-    console.error("Error generating outreach email:", error);
-    return `Hi ${contactName},
-
-I noticed ${companyName} is in the ${insights.summary}. 
-
-I'd love to explore how we might help optimize your operations. Would you be open to a brief conversation?
-
-Best regards`;
+    console.error('AI enhancement error:', error);
+    return [`Analysis of ${companyName} requires manual review`];
   }
 }
