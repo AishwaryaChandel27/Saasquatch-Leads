@@ -151,6 +151,7 @@ export class MemStorage implements IStorage {
         buyingIntent: "high" as const,
         budgetRange: "$5M-$25M",
         decisionTimeline: "Q1 2025",
+        companyType: "public",
         isEnriched: true
       },
       {
@@ -171,6 +172,7 @@ export class MemStorage implements IStorage {
         buyingIntent: "high" as const,
         budgetRange: "$3M-$12M",
         decisionTimeline: "Q2 2025",
+        companyType: "unicorn",
         isEnriched: true
       },
       {
@@ -191,6 +193,7 @@ export class MemStorage implements IStorage {
         buyingIntent: "medium" as const,
         budgetRange: "$10M-$50M",
         decisionTimeline: "Q3 2025",
+        companyType: "mnc",
         isEnriched: true
       },
       {
@@ -211,6 +214,7 @@ export class MemStorage implements IStorage {
         buyingIntent: "high" as const,
         budgetRange: "$2M-$8M",
         decisionTimeline: "Q1 2025",
+        companyType: "public",
         isEnriched: true
       },
       {
@@ -231,6 +235,7 @@ export class MemStorage implements IStorage {
         buyingIntent: "high" as const,
         budgetRange: "$4M-$15M",
         decisionTimeline: "Q2 2025",
+        companyType: "public",
         isEnriched: true
       },
       {
@@ -251,6 +256,7 @@ export class MemStorage implements IStorage {
         buyingIntent: "high" as const,
         budgetRange: "$3M-$10M",
         decisionTimeline: "Q1 2025",
+        companyType: "public",
         isEnriched: true
       },
       {
@@ -271,6 +277,7 @@ export class MemStorage implements IStorage {
         buyingIntent: "medium" as const,
         budgetRange: "$2M-$7M",
         decisionTimeline: "Q3 2025",
+        companyType: "enterprise",
         isEnriched: true
       },
       {
