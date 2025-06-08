@@ -93,9 +93,139 @@ export interface CompanyAnalysisReport {
 
 export async function generateCompanyAnalysis(lead: Lead): Promise<CompanyAnalysisReport> {
   try {
-    return generateFallbackReport(lead);
+    // Import OpenAI
+    const { default: OpenAI } = await import('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    // Generate comprehensive company analysis using OpenAI
+    const prompt = `Analyze the following company and provide a comprehensive business intelligence report:
+
+Company: ${lead.companyName}
+Industry: ${lead.industry}
+Location: ${lead.location}
+Company Size: ${lead.companySize}
+Website: ${lead.website || 'Not available'}
+Contact: ${lead.contactName} - ${lead.jobTitle}
+
+Provide a detailed analysis in JSON format with the following structure:
+{
+  "basicInfo": {
+    "companyName": "${lead.companyName}",
+    "domain": "company domain",
+    "foundedYear": "year founded",
+    "headquarters": "${lead.location}",
+    "logo": "logo URL if available",
+    "legalName": "legal company name",
+    "entityType": "corporation type"
+  },
+  "executiveTeam": {
+    "ceo": "CEO name",
+    "cto": "CTO name", 
+    "cfo": "CFO name",
+    "keyDecisionMakers": ["list of key executives"],
+    "linkedinProfiles": ["LinkedIn URLs"],
+    "contactInfo": {
+      "email": "general email",
+      "phone": "phone number"
+    }
+  },
+  "companyOverview": {
+    "description": "detailed company description",
+    "mission": "company mission",
+    "industry": "${lead.industry}",
+    "businessModel": "business model type",
+    "keyProducts": ["main products/services"],
+    "uniqueSellingProposition": "USP"
+  },
+  "financialSummary": {
+    "revenue": "estimated revenue",
+    "employeeCount": ${lead.employeeCount || 0},
+    "valuation": "company valuation",
+    "fundingRounds": ["funding history"],
+    "investors": ["key investors"],
+    "profitability": "profitability status"
+  },
+  "growthIndicators": {
+    "recentFunding": "recent funding info",
+    "hiringTrends": "hiring patterns",
+    "techStack": ["technologies used"],
+    "jobPostings": 0,
+    "marketExpansion": ["expansion areas"]
+  },
+  "webSocialPresence": {
+    "website": "${lead.website || ''}",
+    "linkedin": "LinkedIn company page",
+    "twitter": "Twitter handle",
+    "facebook": "Facebook page",
+    "trafficEstimates": "website traffic data",
+    "seoRankings": "SEO performance",
+    "googleTrends": "search trends"
+  },
+  "technographics": {
+    "crm": "CRM system used",
+    "emailTools": ["email marketing tools"],
+    "analytics": ["analytics platforms"],
+    "hosting": ["hosting providers"],
+    "security": ["security tools"]
+  },
+  "complianceRisk": {
+    "legalFilings": "recent legal filings",
+    "regulatoryIssues": ["compliance issues"],
+    "lawsuits": ["legal matters"],
+    "dataBreaches": ["security incidents"],
+    "gdprCompliance": "GDPR status"
+  },
+  "partnersClients": {
+    "strategicAlliances": ["key partnerships"],
+    "majorClients": ["major customers"],
+    "vendorRelationships": ["vendor partners"],
+    "supplyChain": "supply chain info"
+  },
+  "newsInsights": {
+    "recentNews": ["recent news articles"],
+    "pressReleases": ["press releases"],
+    "mediaCoverage": "media sentiment",
+    "maActivity": ["M&A activity"]
+  },
+  "aiRecommendations": {
+    "leadQuality": "quality assessment",
+    "approachStrategy": "recommended approach",
+    "buyingSignals": ["buying indicators"],
+    "riskFactors": ["potential risks"],
+    "nextSteps": ["recommended actions"]
+  }
+}
+
+Provide realistic, detailed information based on the company profile. If specific data is not available, provide educated estimates based on industry standards and company size.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages: [
+        {
+          role: "system",
+          content: "You are a business intelligence analyst providing comprehensive company reports. Return only valid JSON."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3
+    });
+
+    const analysisData = JSON.parse(response.choices[0].message.content || '{}');
+    
+    // Enhance with additional calculated fields
+    analysisData.aiRecommendations.leadQuality = calculateLeadQuality(lead);
+    analysisData.aiRecommendations.approachStrategy = generateApproachStrategy(lead);
+    analysisData.aiRecommendations.nextSteps = generateNextSteps(lead);
+
+    return analysisData as CompanyAnalysisReport;
+
   } catch (error) {
-    console.error("Error generating company analysis:", error);
+    console.error("Error generating AI company analysis:", error);
+    // Return structured report even if API fails
     return generateFallbackReport(lead);
   }
 }
