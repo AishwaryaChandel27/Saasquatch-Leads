@@ -72,6 +72,58 @@ export default function Dashboard() {
     });
   }, [leads, searchTerm, selectedLocation, selectedIndustry, selectedCompanyType]);
 
+  // Sort filtered leads based on selected criteria
+  const sortedLeads = useMemo(() => {
+    const sorted = [...filteredLeads];
+    
+    switch (sortBy) {
+      case "score":
+        return sorted.sort((a, b) => (b.score || 0) - (a.score || 0));
+      case "companyName":
+        return sorted.sort((a, b) => a.companyName.localeCompare(b.companyName));
+      case "employeeCount":
+        return sorted.sort((a, b) => {
+          const aCount = a.employeeCount || 0;
+          const bCount = b.employeeCount || 0;
+          return bCount - aCount;
+        });
+      case "priority":
+        return sorted.sort((a, b) => {
+          const priorityOrder = { "hot": 3, "warm": 2, "cold": 1 };
+          return (priorityOrder[b.priority as keyof typeof priorityOrder] || 0) - 
+                 (priorityOrder[a.priority as keyof typeof priorityOrder] || 0);
+        });
+      case "recentActivity":
+        return sorted.sort((a, b) => {
+          const aActivity = a.lastContact ? new Date(a.lastContact).getTime() : 0;
+          const bActivity = b.lastContact ? new Date(b.lastContact).getTime() : 0;
+          return bActivity - aActivity;
+        });
+      case "fundingAmount":
+        return sorted.sort((a, b) => {
+          // Extract numeric value from funding strings
+          const extractFunding = (funding: string | null) => {
+            if (!funding) return 0;
+            const match = funding.match(/\$?(\d+(?:\.\d+)?)\s*([kmb]?)/i);
+            if (!match) return 0;
+            let value = parseFloat(match[1]);
+            const unit = match[2]?.toLowerCase();
+            if (unit === 'k') value *= 1000;
+            if (unit === 'm') value *= 1000000;
+            if (unit === 'b') value *= 1000000000;
+            return value;
+          };
+          return extractFunding(b.fundingAmount) - extractFunding(a.fundingAmount);
+        });
+      case "industry":
+        return sorted.sort((a, b) => a.industry.localeCompare(b.industry));
+      case "location":
+        return sorted.sort((a, b) => a.location.localeCompare(b.location));
+      default:
+        return sorted;
+    }
+  }, [filteredLeads, sortBy]);
+
   // Get unique locations and industries for filter options
   const uniqueLocations = useMemo(() => {
     const locations = Array.from(new Set(leads.map((lead: Lead) => lead.location)));
@@ -203,7 +255,7 @@ export default function Dashboard() {
 
             {/* Results Count */}
             <div className="text-sm text-gray-500 whitespace-nowrap">
-              {filteredLeads.length} lead{filteredLeads.length !== 1 ? 's' : ''}
+              {sortedLeads.length} lead{sortedLeads.length !== 1 ? 's' : ''}
             </div>
           </div>
         </div>
@@ -216,11 +268,11 @@ export default function Dashboard() {
               <CardContent className="p-0">
                 {isLoading ? (
                   <div className="p-6 text-center text-gray-500">Loading leads...</div>
-                ) : filteredLeads.length === 0 ? (
+                ) : sortedLeads.length === 0 ? (
                   <div className="p-6 text-center text-gray-500">No leads found</div>
                 ) : (
                   <div className="divide-y">
-                    {filteredLeads.map((lead: Lead) => (
+                    {sortedLeads.map((lead: Lead) => (
                       <div
                         key={lead.id}
                         className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
