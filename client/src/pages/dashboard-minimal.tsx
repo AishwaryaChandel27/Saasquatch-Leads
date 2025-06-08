@@ -135,7 +135,7 @@ export default function Dashboard() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Locations</SelectItem>
-                  {uniqueLocations.map((location) => (
+                  {uniqueLocations.map((location: string) => (
                     <SelectItem key={location} value={location}>
                       {location}
                     </SelectItem>
@@ -153,7 +153,7 @@ export default function Dashboard() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Industries</SelectItem>
-                  {uniqueIndustries.map((industry) => (
+                  {uniqueIndustries.map((industry: string) => (
                     <SelectItem key={industry} value={industry}>
                       {industry}
                     </SelectItem>
@@ -171,7 +171,7 @@ export default function Dashboard() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Company Types</SelectItem>
-                  {uniqueCompanyTypes.map((type) => (
+                  {uniqueCompanyTypes.map((type: string) => (
                     <SelectItem key={type} value={type}>
                       {type.charAt(0).toUpperCase() + type.slice(1)}
                     </SelectItem>
