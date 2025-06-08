@@ -468,8 +468,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Lead not found" });
       }
 
-      // Simulate enrichment from multiple public sources
-      const enrichmentData = await enrichFromPublicSources(lead);
+      // Import multi-source enrichment functions
+      const { enrichCompanyFromMultipleSources, determineCompanyType } = await import("./lib/multiSourceEnrichment");
+      
+      // Enrich from LinkedIn, Crunchbase, GitHub, and Google
+      const enrichedData = await enrichCompanyFromMultipleSources(
+        lead.companyName,
+        lead.website || undefined
+      );
+      
+      // Determine company type based on enriched data
+      const companyType = determineCompanyType(enrichedData);
+      
+      const enrichmentData = {
+        companyType,
+        ...(enrichedData.linkedin?.employeeCount && {
+          employeeCount: enrichedData.linkedin.employeeCount
+        }),
+        ...(enrichedData.github?.techStack && {
+          techStack: enrichedData.github.techStack
+        }),
+        sources: ['linkedin', 'crunchbase', 'github', 'google']
+      };
       
       // Update lead with enriched data
       const updatedLead = await storage.updateLead(leadId, {
@@ -506,7 +526,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const lead = await storage.getLead(leadId);
           if (lead) {
-            const enrichmentData = await enrichFromPublicSources(lead);
+            // Import multi-source enrichment functions
+            const { enrichCompanyFromMultipleSources, determineCompanyType } = await import("./lib/multiSourceEnrichment");
+            
+            // Enrich from LinkedIn, Crunchbase, GitHub, and Google
+            const enrichedData = await enrichCompanyFromMultipleSources(
+              lead.companyName,
+              lead.website || undefined
+            );
+            
+            // Determine company type based on enriched data
+            const companyType = determineCompanyType(enrichedData);
+            
+            const enrichmentData = {
+              companyType,
+              ...(enrichedData.linkedin?.employeeCount && {
+                employeeCount: enrichedData.linkedin.employeeCount
+              }),
+              ...(enrichedData.github?.techStack && {
+                techStack: enrichedData.github.techStack
+              }),
+              sources: ['linkedin', 'crunchbase', 'github', 'google']
+            };
             const updatedLead = await storage.updateLead(leadId, {
               ...enrichmentData,
               isEnriched: true

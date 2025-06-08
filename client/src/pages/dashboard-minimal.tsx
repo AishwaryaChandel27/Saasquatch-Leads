@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Search, Users, Building, MapPin, Mail, Phone, Globe, Brain, Loader2, FileText, Factory } from "lucide-react";
+import { Search, Users, Building, MapPin, Mail, Phone, Globe, Brain, Loader2, FileText, Factory, ArrowUpDown } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { Lead } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [selectedLocation, setSelectedLocation] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("");
   const [selectedCompanyType, setSelectedCompanyType] = useState("");
+  const [sortBy, setSortBy] = useState("score");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -74,17 +75,17 @@ export default function Dashboard() {
   // Get unique locations and industries for filter options
   const uniqueLocations = useMemo(() => {
     const locations = Array.from(new Set(leads.map((lead: Lead) => lead.location)));
-    return locations.sort();
+    return locations.sort() as string[];
   }, [leads]);
 
   const uniqueIndustries = useMemo(() => {
     const industries = Array.from(new Set(leads.map((lead: Lead) => lead.industry)));
-    return industries.sort();
+    return industries.sort() as string[];
   }, [leads]);
 
   const uniqueCompanyTypes = useMemo(() => {
     const types = Array.from(new Set(leads.map((lead: any) => lead.companyType || "enterprise")));
-    return types.sort();
+    return types.sort() as string[];
   }, [leads]);
 
   // AI Analysis mutation
@@ -176,6 +177,26 @@ export default function Dashboard() {
                       {type.charAt(0).toUpperCase() + type.slice(1)}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Advanced Sorting Options */}
+            <div className="flex items-center space-x-2">
+              <ArrowUpDown className="h-4 w-4 text-gray-500" />
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="score">Score (High to Low)</SelectItem>
+                  <SelectItem value="companyName">Company Name (A-Z)</SelectItem>
+                  <SelectItem value="employeeCount">Employee Count</SelectItem>
+                  <SelectItem value="priority">Priority Level</SelectItem>
+                  <SelectItem value="recentActivity">Recent Activity</SelectItem>
+                  <SelectItem value="fundingAmount">Funding Amount</SelectItem>
+                  <SelectItem value="industry">Industry</SelectItem>
+                  <SelectItem value="location">Location</SelectItem>
                 </SelectContent>
               </Select>
             </div>

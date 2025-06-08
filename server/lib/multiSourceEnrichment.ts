@@ -1,6 +1,6 @@
 import { Lead } from "@shared/schema";
 import axios from "axios";
-import cheerio from "cheerio";
+import * as cheerio from "cheerio";
 
 export interface LinkedInCompanyData {
   name: string;
@@ -363,13 +363,13 @@ export function determineCompanyType(enrichedData: EnrichedCompanyData): string 
   }
   
   // Check for enterprise/MNC indicators
-  if (linkedin?.employeeCount > 10000 ||
+  if ((linkedin?.employeeCount && linkedin.employeeCount > 10000) ||
       linkedin?.companySize === '10,000+' ||
       crunchbase?.employeeCount === '10,001+') {
     return 'mnc';
   }
   
-  if (linkedin?.employeeCount > 1000 ||
+  if ((linkedin?.employeeCount && linkedin.employeeCount > 1000) ||
       linkedin?.companySize === '1000+' ||
       crunchbase?.employeeCount?.includes('1001-')) {
     return 'enterprise';
