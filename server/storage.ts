@@ -652,6 +652,7 @@ export class MemStorage implements IStorage {
         industry: leadData.industry,
         location: leadData.location,
         website: leadData.website,
+        linkedinUrl: null,
         score: 85 - (index * 5), // High scores for demonstration
         priority: leadData.priority,
         techStack: leadData.techStack,
@@ -663,7 +664,8 @@ export class MemStorage implements IStorage {
         buyingIntent: leadData.buyingIntent,
         budgetRange: leadData.budgetRange,
         decisionTimeline: leadData.decisionTimeline,
-        isEnriched: leadData.isEnriched
+        isEnriched: leadData.isEnriched,
+        companyAnalysis: null
       };
       this.leads.set(id, lead);
     });
@@ -690,6 +692,7 @@ export class MemStorage implements IStorage {
       industry: insertLead.industry,
       location: insertLead.location,
       website: insertLead.website || null,
+      linkedinUrl: insertLead.linkedinUrl || null,
       score: 0,
       priority: insertLead.priority || "cold",
       techStack: Array.isArray(insertLead.techStack) ? insertLead.techStack as string[] : 
@@ -703,6 +706,7 @@ export class MemStorage implements IStorage {
       decisionTimeline: insertLead.decisionTimeline || null,
       isEnriched: false,
       companyType: insertLead.companyType || "enterprise",
+      companyAnalysis: insertLead.companyAnalysis || null
     };
     this.leads.set(id, lead);
     return lead;
