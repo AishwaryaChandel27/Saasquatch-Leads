@@ -78,7 +78,6 @@ async function getChatJSONResponse(prompt: string) {
     throw new Error("Invalid JSON response from AI");
   }
 }
-}
 
 export async function analyzeCompanyWithAI(prompt: CompanyAnalysisPrompt): Promise<AIAnalysisResult> {
   const analysisPrompt = `
@@ -142,19 +141,16 @@ Return JSON with these exact fields:
 }
 
 export async function enhanceLeadWithAI(companyName: string, existingData: any): Promise<string[]> {
-  const messages = [
-    {
-      role: "system",
-      content: "You are a sales expert. Return 3–5 actionable insights in JSON format with an 'insights' array.",
-    },
-    {
-      role: "user",
-      content: `Company: ${companyName}\nExisting Data: ${JSON.stringify(existingData)}\n\nProvide insights.`,
-    },
-  ];
+  const enhancementPrompt = `
+Generate 3-5 actionable insights for this company:
+Company: ${companyName}
+Existing Data: ${JSON.stringify(existingData)}
+
+Return JSON format: {"insights": ["insight1", "insight2", "insight3"]}
+`;
 
   try {
-    const result = await getChatJSONResponse(messages, 500);
+    const result = await getChatJSONResponse(enhancementPrompt);
     return result.insights || [];
   } catch (error) {
     console.error("Lead enhancement error:", error);
@@ -163,19 +159,14 @@ export async function enhanceLeadWithAI(companyName: string, existingData: any):
 }
 
 export async function generateCompanyInsights(companyName: string): Promise<string[]> {
-  const messages = [
-    {
-      role: "system",
-      content: "Generate 5 key insights (market position, growth, opportunities) in a JSON object with an 'insights' array.",
-    },
-    {
-      role: "user",
-      content: `Company: ${companyName}`,
-    },
-  ];
+  const insightsPrompt = `
+Generate 5 key insights about ${companyName} including market position, growth opportunities, and competitive advantages.
+
+Return JSON format: {"insights": ["insight1", "insight2", "insight3", "insight4", "insight5"]}
+`;
 
   try {
-    const result = await getChatJSONResponse(messages, 600);
+    const result = await getChatJSONResponse(insightsPrompt);
     return result.insights || [];
   } catch (error) {
     console.error("Insight generation error:", error);
@@ -184,22 +175,19 @@ export async function generateCompanyInsights(companyName: string): Promise<stri
 }
 
 export async function generateOutreachEmail(companyName: string, contactName: string, jobTitle: string): Promise<string> {
-  const messages = [
-    {
-      role: "system",
-      content: "Generate a professional outreach email in JSON format with 'subject' and 'body' fields.",
-    },
-    {
-      role: "user",
-      content: `Write an outreach email to ${contactName}, ${jobTitle} at ${companyName}, focusing on value and growth.`,
-    },
-  ];
+  const emailPrompt = `
+Generate a professional outreach email for:
+Contact: ${contactName}, ${jobTitle} at ${companyName}
+Focus on value proposition and growth opportunities.
+
+Return JSON format: {"subject": "subject line", "body": "email body"}
+`;
 
   try {
-    const result = await getChatJSONResponse(messages, 400);
+    const result = await getChatJSONResponse(emailPrompt);
     return `Subject: ${result.subject}\n\n${result.body}`;
   } catch (error) {
     console.error("Email generation error:", error);
-    return `Subject: Opportunity with ${companyName}\n\nHi ${contactName},\n\nI’d love to explore how we can support ${companyName}'s growth goals.\n\nBest regards.`;
+    return `Subject: Opportunity with ${companyName}\n\nHi ${contactName},\n\nI'd love to explore how we can support ${companyName}'s growth goals.\n\nBest regards.`;
   }
 }
