@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Search, Users, Building, MapPin, Mail, Phone, Globe, Brain, Loader2, FileText, Factory, ArrowUpDown } from "lucide-react";
+import { Search, Users, Building, MapPin, Mail, Phone, Globe, Brain, Loader2, FileText, Factory, ArrowUpDown, Target, BarChart3, Lightbulb, CheckCircle } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { Lead } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -413,122 +413,76 @@ export default function Dashboard() {
                           <ScrollArea className="max-h-[70vh]">
                             {analysisMutation.data && (
                               <div className="space-y-6 p-4">
-                                {/* Basic Information */}
+                                {/* Lead Score Breakdown */}
                                 <div>
                                   <h3 className="text-lg font-semibold mb-3 flex items-center">
-                                    <Building className="w-4 h-4 mr-2" />
-                                    Basic Information
+                                    <Target className="w-4 h-4 mr-2" />
+                                    Lead Quality Analysis
                                   </h3>
                                   <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div><strong>Company:</strong> {analysisMutation.data?.analysis?.basicInfo?.companyName || 'N/A'}</div>
-                                    <div><strong>Domain:</strong> {analysisMutation.data?.analysis?.basicInfo?.domain || 'N/A'}</div>
-                                    <div><strong>Founded:</strong> {analysisMutation.data?.analysis?.basicInfo?.foundedYear || 'N/A'}</div>
-                                    <div><strong>HQ:</strong> {analysisMutation.data?.analysis?.basicInfo?.headquarters || 'N/A'}</div>
-                                    <div><strong>Legal Name:</strong> {analysisMutation.data?.analysis?.basicInfo?.legalName || 'N/A'}</div>
-                                    <div><strong>Entity Type:</strong> {analysisMutation.data?.analysis?.basicInfo?.entityType || 'N/A'}</div>
+                                    <div><strong>Overall Score:</strong> {analysisMutation.data?.qualityMetrics?.score || 'N/A'}/100</div>
+                                    <div><strong>Category:</strong> 
+                                      <Badge className="ml-2" variant={analysisMutation.data?.qualityMetrics?.category === 'High' ? 'default' : analysisMutation.data?.qualityMetrics?.category === 'Medium' ? 'secondary' : 'outline'}>
+                                        {analysisMutation.data?.qualityMetrics?.category || 'N/A'}
+                                      </Badge>
+                                    </div>
+                                    <div><strong>Confidence:</strong> {analysisMutation.data?.qualityMetrics?.confidence || 'N/A'}%</div>
                                   </div>
                                 </div>
 
                                 <Separator />
 
-                                {/* Executive Team */}
+                                {/* Scoring Breakdown */}
                                 <div>
                                   <h3 className="text-lg font-semibold mb-3 flex items-center">
-                                    <Users className="w-4 h-4 mr-2" />
-                                    Executive Team
+                                    <BarChart3 className="w-4 h-4 mr-2" />
+                                    Detailed Score Breakdown
                                   </h3>
-                                  <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div><strong>CEO:</strong> {analysisMutation.data?.analysis?.executiveTeam?.ceo || 'N/A'}</div>
-                                    <div><strong>CTO:</strong> {analysisMutation.data?.analysis?.executiveTeam?.cto || 'N/A'}</div>
-                                    <div><strong>CFO:</strong> {analysisMutation.data?.analysis?.executiveTeam?.cfo || 'N/A'}</div>
-                                    <div><strong>Key Decision Makers:</strong> {analysisMutation.data?.analysis?.executiveTeam?.keyDecisionMakers?.join(', ') || 'N/A'}</div>
+                                  <div className="space-y-3">
+                                    {analysisMutation.data?.enrichmentData && Object.entries(analysisMutation.data.enrichmentData).map(([key, data]: [string, any]) => (
+                                      <div key={key} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                        <div>
+                                          <span className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                                          <p className="text-xs text-gray-600">{data.reasoning}</p>
+                                        </div>
+                                        <Badge variant="outline">{data.score}/100</Badge>
+                                      </div>
+                                    ))}
                                   </div>
                                 </div>
 
                                 <Separator />
 
-                                {/* Company Overview */}
-                                <div>
-                                  <h3 className="text-lg font-semibold mb-3">Company Overview</h3>
-                                  <div className="space-y-2 text-sm">
-                                    <div><strong>Description:</strong> {analysisMutation.data?.analysis?.companyOverview?.description || 'N/A'}</div>
-                                    <div><strong>Mission:</strong> {analysisMutation.data?.analysis?.companyOverview?.mission || 'N/A'}</div>
-                                    <div><strong>Business Model:</strong> {analysisMutation.data?.analysis?.companyOverview?.businessModel || 'N/A'}</div>
-                                    <div><strong>Key Products:</strong> {analysisMutation.data?.analysis?.companyOverview?.keyProducts?.join(', ') || 'N/A'}</div>
-                                    <div><strong>USP:</strong> {analysisMutation.data?.analysis?.companyOverview?.uniqueSellingProposition || 'N/A'}</div>
-                                  </div>
-                                </div>
-
-                                <Separator />
-
-                                {/* Financial Summary */}
-                                <div>
-                                  <h3 className="text-lg font-semibold mb-3">Financial Summary</h3>
-                                  <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div><strong>Revenue:</strong> {analysisMutation.data?.analysis?.financialSummary?.revenue || 'N/A'}</div>
-                                    <div><strong>Employees:</strong> {analysisMutation.data?.analysis?.financialSummary?.employeeCount?.toLocaleString() || 'N/A'}</div>
-                                    <div><strong>Valuation:</strong> {analysisMutation.data?.analysis?.financialSummary?.valuation || 'N/A'}</div>
-                                    <div><strong>Funding Rounds:</strong> {analysisMutation.data?.analysis?.financialSummary?.fundingRounds?.join(', ') || 'N/A'}</div>
-                                    <div><strong>Investors:</strong> {analysisMutation.data?.analysis?.financialSummary?.investors?.join(', ') || 'N/A'}</div>
-                                    <div><strong>Profitability:</strong> {analysisMutation.data?.analysis?.financialSummary?.profitability || 'N/A'}</div>
-                                  </div>
-                                </div>
-
-                                <Separator />
-
-                                {/* Growth Indicators */}
-                                <div>
-                                  <h3 className="text-lg font-semibold mb-3">Growth Indicators</h3>
-                                  <div className="space-y-2 text-sm">
-                                    <div><strong>Recent Funding:</strong> {analysisMutation.data?.analysis?.growthIndicators?.recentFunding || 'N/A'}</div>
-                                    <div><strong>Hiring Trends:</strong> {analysisMutation.data?.analysis?.growthIndicators?.hiringTrends || 'N/A'}</div>
-                                    <div><strong>Tech Stack:</strong> {analysisMutation.data?.analysis?.growthIndicators?.techStack?.join(', ') || 'N/A'}</div>
-                                    <div><strong>Job Postings:</strong> {analysisMutation.data?.analysis?.growthIndicators?.jobPostings || 'N/A'}</div>
-                                    <div><strong>Market Expansion:</strong> {analysisMutation.data?.analysis?.growthIndicators?.marketExpansion?.join(', ') || 'N/A'}</div>
-                                  </div>
-                                </div>
-
-                                <Separator />
-
-                                {/* AI Recommendations */}
+                                {/* AI Insights */}
                                 <div>
                                   <h3 className="text-lg font-semibold mb-3 flex items-center">
                                     <Brain className="w-4 h-4 mr-2" />
-                                    AI Recommendations
+                                    AI Strategic Insights
                                   </h3>
-                                  <div className="space-y-3 text-sm">
-                                    <div>
-                                      <strong>Lead Quality:</strong>
-                                      <p className="mt-1 text-gray-600">{analysisMutation.data?.analysis?.aiRecommendations?.leadQuality || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                      <strong>Approach Strategy:</strong>
-                                      <p className="mt-1 text-gray-600">{analysisMutation.data?.analysis?.aiRecommendations?.approachStrategy || 'N/A'}</p>
-                                    </div>
-                                    <div>
-                                      <strong>Buying Signals:</strong>
-                                      <ul className="mt-1 list-disc list-inside text-gray-600">
-                                        {analysisMutation.data?.analysis?.aiRecommendations?.buyingSignals?.map((signal: string, idx: number) => (
-                                          <li key={idx}>{signal}</li>
-                                        )) || <li>N/A</li>}
-                                      </ul>
-                                    </div>
-                                    <div>
-                                      <strong>Risk Factors:</strong>
-                                      <ul className="mt-1 list-disc list-inside text-gray-600">
-                                        {analysisMutation.data?.analysis?.aiRecommendations?.riskFactors?.map((risk: string, idx: number) => (
-                                          <li key={idx}>{risk}</li>
-                                        )) || <li>N/A</li>}
-                                      </ul>
-                                    </div>
-                                    <div>
-                                      <strong>Next Steps:</strong>
-                                      <ul className="mt-1 list-disc list-inside text-gray-600">
-                                        {analysisMutation.data?.analysis?.aiRecommendations?.nextSteps?.map((step: string, idx: number) => (
-                                          <li key={idx}>{step}</li>
-                                        )) || <li>N/A</li>}
-                                      </ul>
-                                    </div>
+                                  <div className="space-y-3">
+                                    {analysisMutation.data?.aiInsights?.map((insight: string, index: number) => (
+                                      <div key={index} className="p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
+                                        <p className="text-sm">{insight}</p>
+                                      </div>
+                                    )) || <p className="text-gray-500">No AI insights available</p>}
+                                  </div>
+                                </div>
+
+                                <Separator />
+
+                                {/* Recommendations */}
+                                <div>
+                                  <h3 className="text-lg font-semibold mb-3 flex items-center">
+                                    <Lightbulb className="w-4 h-4 mr-2" />
+                                    Strategic Recommendations
+                                  </h3>
+                                  <div className="space-y-2">
+                                    {analysisMutation.data?.qualityMetrics?.recommendations?.map((rec: string, index: number) => (
+                                      <div key={index} className="flex items-start space-x-2">
+                                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                        <p className="text-sm">{rec}</p>
+                                      </div>
+                                    )) || <p className="text-gray-500">No recommendations available</p>}
                                   </div>
                                 </div>
                               </div>
