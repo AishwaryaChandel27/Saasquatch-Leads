@@ -58,7 +58,7 @@ async function getChatJSONResponse(prompt: string) {
     throw new Error("Gemini API key not configured. Please provide GEMINI_API_KEY to use AI features.");
   }
   
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
   
   const response = await model.generateContent([
     "You are a B2B sales intelligence analyst. Always respond with valid JSON format.",
