@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { insertLeadSchema, updateLeadSchema } from "@shared/schema";
 import { generateCompanyInsights, generateOutreachEmail, analyzeCompanyWithAI } from "./lib/gemini";
 import { searchCompanyInfo } from "./lib/googleSearch";
+import { generateCompanyAnalysis } from "./lib/aiAnalysis";
 import { calculateLeadScore, updateLeadPriority } from "./lib/leadScoring";
 import { calculateMLScore, classifyLeadQuality } from "./lib/mlScoring";
 import { aggregateRealWorldData } from "./lib/realWorldData";
@@ -888,19 +889,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`Generating comprehensive analysis for ${lead.companyName}...`);
-      const analysisReport = await generateCompanyAnalysis(lead);
+      
+      // Get real-world data from Google Search
+      const searchData = await searchCompanyInfo(lead.companyName);
+      
+      // Generate AI insights using Gemini
+      const aiPrompt = {
+        companyName: lead.companyName,
+        domain: searchData.basicInfo.website || lead.website,
+        industry: lead.industry,
+        description: searchData.basicInfo.description,
+        additionalData: JSON.stringify({
+          news: searchData.news,
+          fundingInfo: searchData.fundingInfo,
+          techInfo: searchData.techInfo
+        })
+      };
+      
+      const aiAnalysis = await analyzeCompanyWithAI(aiPrompt);
       
       res.json({
         leadId: id,
         companyName: lead.companyName,
         generatedAt: new Date().toISOString(),
-        report: analysisReport
+        realWorldData: searchData,
+        aiAnalysis: aiAnalysis,
+        report: {
+          basicInfo: {
+            companyName: lead.companyName,
+            website: searchData.basicInfo.website || lead.website,
+            industry: lead.industry,
+            description: searchData.basicInfo.description
+          },
+          executiveTeam: aiAnalysis.executiveTeam,
+          financialSummary: aiAnalysis.financialSummary,
+          growthIndicators: aiAnalysis.growthIndicators,
+          technographics: aiAnalysis.technographics,
+          aiRecommendations: aiAnalysis.aiRecommendations,
+          recentNews: searchData.news,
+          socialMedia: searchData.socialMedia
+        }
       });
     } catch (error) {
       console.error('Company analysis error:', error);
       res.status(500).json({ 
         message: "Failed to generate company analysis",
-        error: error instanceof Error ? error.message : "Analysis service temporarily unavailable"
+        error: error instanceof Error ? error.message : "AI analysis service requires API keys"
       });
     }
   });
