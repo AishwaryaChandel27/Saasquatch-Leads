@@ -53,7 +53,7 @@ function extractFeatures(lead: Lead): MLFeatures {
     companySize: normalizeCompanySize(lead.companySize || ""),
     jobTitleLevel: normalizeJobTitle(lead.jobTitle || ""),
     industryValue: normalizeIndustry(lead.industry || ""),
-    fundingStage: normalizeFundingStage(lead.notes || ""),
+    fundingStage: normalizeFundingStage(lead.fundingInfo || ""),
     techStackModern: normalizeTechStack(lead.website || ""),
     engagementScore: normalizeEngagement(lead)
   };
@@ -94,8 +94,8 @@ function normalizeIndustry(industry: string): number {
   return 0.4;
 }
 
-function normalizeFundingStage(notes: string): number {
-  const lowerNotes = notes.toLowerCase();
+function normalizeFundingStage(fundingInfo: string): number {
+  const lowerNotes = fundingInfo.toLowerCase();
   
   if (lowerNotes.includes('series c') || lowerNotes.includes('series d') || lowerNotes.includes('ipo')) return 1.0;
   if (lowerNotes.includes('series b')) return 0.8;
@@ -118,7 +118,7 @@ function normalizeEngagement(lead: Lead): number {
   
   if (lead.email) engagement += 0.3;
   if (lead.website) engagement += 0.2;
-  if (lead.notes && lead.notes.length > 0) engagement += 0.3;
+  if (lead.aiInsights && lead.aiInsights.length > 0) engagement += 0.3;
   if (lead.priority === 'High') engagement += 0.2;
   
   return Math.min(engagement, 1.0);
