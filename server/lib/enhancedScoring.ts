@@ -96,7 +96,7 @@ export function calculateEnhancedScore(lead: Lead, weights: ScoringWeights = DEF
     breakdown.buying.score * weights.buyingSignals +
     breakdown.competitive.score * weights.competitiveLandscape;
 
-  const totalScore = Math.round(Math.min(100, Math.max(0, weightedScore)));
+  const totalScore = Math.round(Math.min(100, Math.max(15, weightedScore)));
   const category = categorizeScore(totalScore);
   const confidence = calculateConfidence(breakdown, lead);
 

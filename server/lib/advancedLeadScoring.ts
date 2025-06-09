@@ -82,7 +82,7 @@ const COMPANY_SIZE_SCORES: Record<string, number> = {
   '50-100': 65,
   '20-50': 50,
   '10-20': 35,
-  '1-10': 20
+  '1-10': 25
 };
 
 // Job title decision authority mapping
@@ -98,9 +98,9 @@ const JOB_TITLE_AUTHORITY: Record<string, number> = {
   'Lead': 45,
   'Engineer': 30,
   'Analyst': 25,
-  'Coordinator': 20,
-  'Associate': 15,
-  'Intern': 10
+  'Coordinator': 25,
+  'Associate': 20,
+  'Intern': 15
 };
 
 // Funding stage value indicators
@@ -167,7 +167,7 @@ function calculateCompanySizeScore(lead: Lead): number {
     if (employeeCount >= 50) return 65;
     if (employeeCount >= 20) return 50;
     if (employeeCount >= 10) return 35;
-    return 20;
+    return 25;
   }
 
   // Fallback to company size ranges

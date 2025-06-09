@@ -653,7 +653,7 @@ export class MemStorage implements IStorage {
         location: leadData.location,
         website: leadData.website,
         linkedinUrl: null,
-        score: 85 - (index * 5), // High scores for demonstration
+        score: Math.max(15, 85 - (index * 2)), // Ensures minimum score of 15
         priority: leadData.priority,
         techStack: leadData.techStack,
         aiInsights: null,
