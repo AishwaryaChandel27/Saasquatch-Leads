@@ -1,10 +1,10 @@
 # AI-Enhanced Lead Scoring & Enrichment Tool
 
-A comprehensive lead management system that combines AI-powered scoring algorithms with real-world data enrichment to prioritize sales prospects and generate actionable insights.
+A comprehensive lead management system that combines Google Gemini AI-powered analysis with real-world data enrichment from Google Search to prioritize sales prospects and generate actionable insights.
 
 ## Overview
 
-This application fetches authentic company data from real-world sources (GitHub, Y Combinator portfolio companies) and applies intelligent scoring algorithms to help sales teams focus on the highest-quality leads. The system includes advanced filtering, location-based targeting, and ML-driven lead qualification.
+This application fetches authentic company data from real-world sources using Google Search API and applies intelligent scoring algorithms enhanced by Google Gemini AI to help sales teams focus on the highest-quality leads. The system includes advanced filtering, location-based targeting, ML-driven lead qualification, and comprehensive company analysis reports.
 
 ## Key Features
 
@@ -27,10 +27,12 @@ This application fetches authentic company data from real-world sources (GitHub,
 - **Smart search**: Company names, contact names, and keywords
 
 ### 🤖 AI-Powered Insights
-- **Company analysis** using OpenAI integration
+- **Company analysis** using Google Gemini AI integration
+- **Real-world data enrichment** from Google Search API
 - **Tech stack detection** from repositories and website analysis
 - **Funding stage assessment** with growth trajectory analysis
 - **Personalized outreach** email generation
+- **Comprehensive company reports** with executive team, financial summary, and recommendations
 
 ## Tech Stack
 
@@ -39,7 +41,8 @@ This application fetches authentic company data from real-world sources (GitHub,
 - **Framework**: Express.js with Vite integration
 - **Data Layer**: In-memory storage (MemStorage) for rapid prototyping
 - **Validation**: Zod schemas with Drizzle ORM types
-- **AI Integration**: OpenAI API for company insights
+- **AI Integration**: Google Gemini API for company insights and analysis
+- **Search Integration**: Google Custom Search API for real-world data enrichment
 - **Web Scraping**: Puppeteer + Cheerio for data enrichment
 
 ### Frontend
@@ -76,12 +79,32 @@ The application will be available at `http://localhost:5000`
 ### Environment Configuration
 Create a `.env` file in the root directory:
 ```bash
-# Optional: OpenAI API key for AI insights generation
-OPENAI_API_KEY=your_openai_api_key_here
+# Required for AI-powered company analysis
+GEMINI_API_KEY=your_google_gemini_api_key_here
+
+# Required for real-world data enrichment
+GOOGLE_API_KEY=your_google_api_key_here
+GOOGLE_SEARCH_ENGINE_ID=your_custom_search_engine_id_here
 
 # Development settings
 NODE_ENV=development
 ```
+
+### API Key Setup Instructions
+
+1. **Google Gemini API Key**:
+   - Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - Create a new API key for Gemini Pro
+   - Add it to your `.env` file as `GEMINI_API_KEY`
+
+2. **Google Custom Search API**:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Enable the Custom Search JSON API
+   - Create credentials and get your API key
+   - Set up a Custom Search Engine at [programmablesearchengine.google.com](https://programmablesearchengine.google.com/)
+   - Add both keys to your `.env` file
+
+**Note**: The application will work without these keys but AI analysis and real-world data enrichment features will be disabled.
 
 ## Project Structure
 
@@ -156,13 +179,26 @@ POST /api/leads/enrich-all
 
 ### AI Integration
 ```bash
-# Generate company insights
+# Generate comprehensive company analysis with real-world data
+POST /api/leads/:id/analysis
+
+# Generate company insights using Gemini AI
 POST /api/leads/:id/insights
 
 # Generate personalized outreach email
 POST /api/leads/:id/outreach
 {
   "templateType": "introduction" | "follow_up" | "product_demo"
+}
+
+# Global lead prospecting with quantity selection
+POST /api/leads/prospect-global
+{
+  "industry": "SaaS",
+  "companySize": "51-200", 
+  "location": "San Francisco, CA",
+  "limit": 25,
+  "sources": ["linkedin", "github", "crunchbase", "news"]
 }
 ```
 

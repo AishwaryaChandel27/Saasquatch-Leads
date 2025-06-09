@@ -128,11 +128,11 @@ export default function GlobalProspecting() {
                   <SelectValue placeholder="Select quantity" />
                 </SelectTrigger>
                 <SelectContent>
-                  {options?.leadQuantities.map((quantity) => (
-                    <SelectItem key={quantity} value={quantity.toString()}>
-                      {quantity} leads
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="5">5 leads</SelectItem>
+                  <SelectItem value="10">10 leads</SelectItem>
+                  <SelectItem value="25">25 leads</SelectItem>
+                  <SelectItem value="50">50 leads</SelectItem>
+                  <SelectItem value="100">100 leads</SelectItem>
                 </SelectContent>
               </Select>
             </div>

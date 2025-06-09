@@ -896,7 +896,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate AI insights using Gemini
       const aiPrompt = {
         companyName: lead.companyName,
-        domain: searchData.basicInfo.website || lead.website,
+        domain: searchData.basicInfo.website || lead.website || undefined,
         industry: lead.industry,
         description: searchData.basicInfo.description,
         additionalData: JSON.stringify({
