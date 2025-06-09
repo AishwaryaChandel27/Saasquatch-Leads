@@ -1,4 +1,4 @@
-import { Header } from "@/components/header";
+import { Header } from "@/components/header-simple";
 import { ScoringSystemOverview } from "@/components/scoring-system-overview";
 
 export default function ScoringSystemPage() {
