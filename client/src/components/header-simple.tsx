@@ -9,7 +9,6 @@ export function Header() {
     { path: "/", label: "Dashboard", icon: Brain },
     { path: "/scoring-analytics", label: "Analytics", icon: BarChart3 },
     { path: "/scoring-system", label: "Scoring", icon: Target },
-    { path: "/global-prospecting", label: "Prospecting", icon: Globe },
   ];
 
   return (
