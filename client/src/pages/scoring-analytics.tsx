@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import { TrendingUp, Users, Target, Award, AlertTriangle, CheckCircle } from "lucide-react";
 import type { Lead } from "@shared/schema";
+import { Header } from "@/components/header-simple";
 
 interface ScoreDistribution {
   range: string;
@@ -133,6 +134,7 @@ export default function ScoringAnalytics() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
+        <Header/>
         <div>
           <h1 className="text-3xl font-bold">Scoring Analytics</h1>
           <p className="text-muted-foreground">Comprehensive analysis of lead quality and distribution</p>
