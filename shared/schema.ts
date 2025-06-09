@@ -26,6 +26,7 @@ export const leads = pgTable("leads", {
   decisionTimeline: text("decision_timeline"),
   isEnriched: boolean("is_enriched").default(false),
   companyType: text("company_type").notNull().default("enterprise"),
+  companyAnalysis: text("company_analysis"),
 });
 
 export const insertLeadSchema = createInsertSchema(leads).omit({

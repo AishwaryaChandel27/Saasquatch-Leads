@@ -878,6 +878,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get existing company analysis report
+  app.get("/api/leads/:id/analysis", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const lead = await storage.getLead(id);
+      
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      
+      // Check if analysis already exists
+      if (lead.companyAnalysis) {
+        try {
+          const analysis = JSON.parse(lead.companyAnalysis);
+          return res.json(analysis);
+        } catch (parseError) {
+          console.error('Error parsing stored analysis:', parseError);
+        }
+      }
+      
+      // Return empty state if no analysis exists
+      res.status(404).json({ message: "No analysis found for this lead" });
+    } catch (error) {
+      console.error('Get analysis error:', error);
+      res.status(500).json({ message: "Failed to retrieve analysis" });
+    }
+  });
+
   // Generate comprehensive company analysis report with real-world data
   app.post("/api/leads/:id/analysis", async (req, res) => {
     try {
@@ -908,7 +936,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const aiAnalysis = await analyzeCompanyWithAI(aiPrompt);
       
-      res.json({
+      const analysisResult = {
         leadId: id,
         companyName: lead.companyName,
         generatedAt: new Date().toISOString(),
@@ -929,7 +957,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           recentNews: searchData.news,
           socialMedia: searchData.socialMedia
         }
+      };
+
+      // Store the analysis in the database
+      await storage.updateLead(id, {
+        companyAnalysis: JSON.stringify(analysisResult),
+        isEnriched: true
       });
+      
+      res.json(analysisResult);
     } catch (error) {
       console.error('Company analysis error:', error);
       res.status(500).json({ 
