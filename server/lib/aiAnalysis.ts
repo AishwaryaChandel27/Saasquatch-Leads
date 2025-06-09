@@ -1,5 +1,5 @@
 import type { Lead } from "@shared/schema";
-import { analyzeCompanyWithAI, CompanyAnalysisPrompt } from './openai.js';
+import { analyzeCompanyWithAI, CompanyAnalysisPrompt } from './openai.ts';
 import { aggregateRealWorldData } from './realWorldData.js';
 
 export interface CompanyAnalysisReport {
