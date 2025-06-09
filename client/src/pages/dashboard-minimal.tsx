@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Search, Users, Building, MapPin, Mail, Phone, Globe, Brain, Loader2, FileText, Factory, ArrowUpDown } from "lucide-react";
@@ -406,6 +406,9 @@ export default function Dashboard() {
                               <FileText className="w-5 h-5" />
                               <span>Company Analysis Report - {selectedLead.companyName}</span>
                             </DialogTitle>
+                            <DialogDescription>
+                              Comprehensive AI-powered analysis including company insights, scoring breakdown, and strategic recommendations
+                            </DialogDescription>
                           </DialogHeader>
                           <ScrollArea className="max-h-[70vh]">
                             {analysisMutation.data && (
