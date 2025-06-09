@@ -50,254 +50,90 @@ export function calculateMLScore(lead: Lead): { score: number; features: MLFeatu
 
 function extractFeatures(lead: Lead): MLFeatures {
   return {
-    companySize: normalizeCompanySize(lead.employeeCount || getEmployeeCountFromSize(lead.companySize)),
-    jobTitleLevel: normalizeJobTitleLevel(lead.jobTitle),
-    industryValue: normalizeIndustryValue(lead.industry),
-    fundingStage: normalizeFundingStage(lead.fundingInfo || ''),
-    techStackModern: normalizeTechStack(lead.techStack || []),
-    engagementScore: normalizeEngagement(lead.recentActivity || '', lead.buyingIntent || 'unknown')
+    companySize: normalizeCompanySize(lead.companySize || ""),
+    jobTitleLevel: normalizeJobTitle(lead.jobTitle || ""),
+    industryValue: normalizeIndustry(lead.industry || ""),
+    fundingStage: normalizeFundingStage(lead.notes || ""),
+    techStackModern: normalizeTechStack(lead.website || ""),
+    engagementScore: normalizeEngagement(lead)
   };
 }
 
-function normalizeCompanySize(employeeCount: number): number {
-  // Logarithmic scaling for company size (1-10000 employees)
-  if (employeeCount <= 0) return 0.1;
-  if (employeeCount >= 10000) return 1.0;
-  
-  // Log scale: 1-10 = 0.1-0.3, 10-100 = 0.3-0.6, 100-1000 = 0.6-0.8, 1000+ = 0.8-1.0
-  return Math.min(1.0, Math.log10(employeeCount) / 4 + 0.1);
+function normalizeCompanySize(companySize: string): number {
+  const sizeMap: { [key: string]: number } = {
+    "1-10": 0.1,
+    "11-50": 0.3,
+    "51-200": 0.6,
+    "201-500": 0.8,
+    "501-1000": 0.9,
+    "1001-5000": 1.0,
+    "5000+": 0.95
+  };
+  return sizeMap[companySize] || 0.4;
 }
 
-function normalizeJobTitleLevel(jobTitle: string): number {
+function normalizeJobTitle(jobTitle: string): number {
   const title = jobTitle.toLowerCase();
   
-  // C-level executives
-  if (title.includes('ceo') || title.includes('cto') || title.includes('cfo') || 
-      title.includes('chief') || title.includes('president') || title.includes('founder')) {
-    return 1.0;
-  }
+  if (title.includes('ceo') || title.includes('cto') || title.includes('founder')) return 1.0;
+  if (title.includes('vp') || title.includes('vice president')) return 0.85;
+  if (title.includes('director') || title.includes('head of')) return 0.7;
+  if (title.includes('manager') || title.includes('lead')) return 0.5;
+  if (title.includes('senior')) return 0.3;
   
-  // VPs and Directors
-  if (title.includes('vp') || title.includes('vice president') || title.includes('director')) {
-    return 0.8;
-  }
-  
-  // Heads and Senior Managers
-  if (title.includes('head') || title.includes('senior manager') || title.includes('principal')) {
-    return 0.6;
-  }
-  
-  // Managers and Leads
-  if (title.includes('manager') || title.includes('lead') || title.includes('supervisor')) {
-    return 0.4;
-  }
-  
-  // Senior individual contributors
-  if (title.includes('senior') || title.includes('staff') || title.includes('architect')) {
-    return 0.3;
-  }
-  
-  // Regular employees
   return 0.2;
 }
 
-function normalizeIndustryValue(industry: string): number {
-  const industryScores = {
-    // High-value, high-budget industries
-    'saas': 1.0,
-    'fintech': 0.95,
-    'cybersecurity': 0.9,
-    'enterprise software': 0.9,
-    'ai/ml': 0.85,
-    'data analytics': 0.8,
-    'cloud services': 0.8,
-    'devops': 0.75,
-    
-    // Growth industries
-    'healthtech': 0.7,
-    'edtech': 0.65,
-    'e-commerce': 0.6,
-    'proptech': 0.6,
-    'insurtech': 0.55,
-    'legaltech': 0.55,
-    'hrtech': 0.5,
-    'martech': 0.5,
-    
-    // Traditional industries
-    'healthcare': 0.45,
-    'financial services': 0.4,
-    'manufacturing': 0.35,
-    'retail': 0.3,
-    'real estate': 0.3,
-    'consulting': 0.25,
-    'media': 0.25,
-    'transportation': 0.2,
-    'travel': 0.2,
-    'food delivery': 0.15,
-    
-    // Lower priority
-    'government': 0.1,
-    'non-profit': 0.05,
-    'education': 0.05
-  };
+function normalizeIndustry(industry: string): number {
+  const highValueIndustries = ['SaaS', 'FinTech', 'Cybersecurity', 'AI/ML', 'Enterprise Software'];
+  const mediumValueIndustries = ['E-commerce', 'HealthTech', 'PropTech', 'Technology'];
   
-  const industryLower = industry.toLowerCase();
+  if (highValueIndustries.includes(industry)) return 1.0;
+  if (mediumValueIndustries.includes(industry)) return 0.7;
   
-  // Check for exact matches first
-  if (industryScores[industryLower]) {
-    return industryScores[industryLower];
-  }
-  
-  // Check for partial matches
-  for (const [key, value] of Object.entries(industryScores)) {
-    if (industryLower.includes(key) || key.includes(industryLower)) {
-      return value;
-    }
-  }
-  
-  return 0.3; // Default for unknown industries
+  return 0.4;
 }
 
-function normalizeFundingStage(fundingInfo: string): number {
-  const funding = fundingInfo.toLowerCase();
+function normalizeFundingStage(notes: string): number {
+  const lowerNotes = notes.toLowerCase();
   
-  if (funding.includes('series d') || funding.includes('series e') || funding.includes('pre-ipo')) return 1.0;
-  if (funding.includes('series c')) return 0.9;
-  if (funding.includes('series b')) return 0.8;
-  if (funding.includes('series a')) return 0.7;
-  if (funding.includes('seed') && !funding.includes('pre-seed')) return 0.6;
-  if (funding.includes('pre-seed')) return 0.4;
+  if (lowerNotes.includes('series c') || lowerNotes.includes('series d') || lowerNotes.includes('ipo')) return 1.0;
+  if (lowerNotes.includes('series b')) return 0.8;
+  if (lowerNotes.includes('series a')) return 0.6;
+  if (lowerNotes.includes('seed') || lowerNotes.includes('pre-seed')) return 0.4;
   
-  // Public companies
-  if (funding.includes('public') || funding.includes('ipo') || funding.includes('nasdaq') || funding.includes('nyse')) {
-    return 0.75; // Established but may have budget constraints
-  }
-  
-  // High valuation indicators
-  if (funding.includes('billion') || funding.includes('unicorn')) return 1.0;
-  
-  // Extract funding amount
-  const millionMatch = funding.match(/(\d+).*million/);
-  if (millionMatch) {
-    const amount = parseInt(millionMatch[1]);
-    if (amount >= 100) return 0.9;
-    if (amount >= 50) return 0.8;
-    if (amount >= 10) return 0.6;
-    if (amount >= 1) return 0.4;
-  }
-  
-  return 0.2; // Unknown or bootstrap
+  return 0.3;
 }
 
-function normalizeTechStack(techStack: string[]): number {
-  if (techStack.length === 0) return 0.3;
+function normalizeTechStack(website: string): number {
+  // Simple heuristic based on domain patterns
+  if (website.includes('.io') || website.includes('.dev') || website.includes('api.')) return 0.8;
+  if (website.includes('.com') || website.includes('.net')) return 0.5;
   
-  const modernTechnologies = [
-    'react', 'vue', 'angular', 'svelte',           // Modern frontend
-    'typescript', 'javascript', 'node.js',        // JavaScript ecosystem
-    'python', 'go', 'rust', 'kotlin',             // Modern backend languages
-    'docker', 'kubernetes', 'aws', 'gcp', 'azure', // Cloud/containerization
-    'postgresql', 'mongodb', 'redis',              // Modern databases
-    'graphql', 'rest', 'microservices',           // API patterns
-    'ci/cd', 'terraform', 'jenkins'               // DevOps
-  ];
-  
-  const stackLower = techStack.map(tech => tech.toLowerCase());
-  let modernCount = 0;
-  
-  for (const tech of modernTechnologies) {
-    if (stackLower.some(stackTech => stackTech.includes(tech))) {
-      modernCount++;
-    }
-  }
-  
-  // Calculate percentage of modern tech adoption
-  const modernRatio = modernCount / Math.min(modernTechnologies.length, 10); // Cap at 10 for scoring
-  return Math.min(1.0, modernRatio);
+  return 0.3;
 }
 
-function normalizeEngagement(recentActivity: string, buyingIntent: string): number {
-  let score = 0.2; // Base engagement score
+function normalizeEngagement(lead: Lead): number {
+  let engagement = 0;
   
-  // Buying intent signals
-  if (buyingIntent === 'high') score += 0.4;
-  else if (buyingIntent === 'medium') score += 0.2;
-  else if (buyingIntent === 'low') score += 0.1;
+  if (lead.email) engagement += 0.3;
+  if (lead.website) engagement += 0.2;
+  if (lead.notes && lead.notes.length > 0) engagement += 0.3;
+  if (lead.priority === 'High') engagement += 0.2;
   
-  // Activity-based signals
-  const activity = recentActivity.toLowerCase();
-  if (activity.includes('demo') || activity.includes('trial') || activity.includes('poc')) {
-    score += 0.3;
-  } else if (activity.includes('download') || activity.includes('whitepaper') || activity.includes('case study')) {
-    score += 0.2;
-  } else if (activity.includes('webinar') || activity.includes('event') || activity.includes('attended')) {
-    score += 0.15;
-  } else if (activity.includes('pricing') || activity.includes('contact') || activity.includes('request')) {
-    score += 0.1;
-  } else if (activity.includes('visit') || activity.includes('view') || activity.includes('browse')) {
-    score += 0.05;
-  }
-  
-  return Math.min(1.0, score);
+  return Math.min(engagement, 1.0);
 }
 
 function calculateConfidence(features: MLFeatures): number {
-  // Confidence based on feature completeness and certainty
+  // Confidence based on how many features have meaningful values
   const featureValues = Object.values(features);
-  const nonZeroFeatures = featureValues.filter(value => value > 0.1).length;
-  const totalFeatures = featureValues.length;
+  const meaningfulFeatures = featureValues.filter(value => value > 0.3).length;
   
-  // Base confidence from feature completeness
-  const completeness = nonZeroFeatures / totalFeatures;
-  
-  // Boost confidence for extreme values (very high or very low)
-  const extremeValues = featureValues.filter(value => value > 0.8 || value < 0.2).length;
-  const extremeBoost = extremeValues / totalFeatures * 0.2;
-  
-  return Math.min(1.0, completeness + extremeBoost);
+  return Math.min(meaningfulFeatures / featureValues.length, 1.0);
 }
 
-function getEmployeeCountFromSize(companySize: string): number {
-  const sizeMap: Record<string, number> = {
-    '1-10': 5,
-    '10-50': 25,
-    '50-200': 100,
-    '200-500': 300,
-    '500-1000': 750,
-    '1000+': 2000
-  };
-  
-  return sizeMap[companySize] || 50;
-}
-
-// Lead quality classification based on ML score
-export function classifyLeadQuality(score: number, confidence: number): {
-  quality: 'High' | 'Medium' | 'Low';
-  priority: 'hot' | 'warm' | 'cold';
-  recommendation: string;
-} {
-  // Adjust thresholds based on confidence
-  const confidentThreshold = confidence > 0.7;
-  const highThreshold = confidentThreshold ? 75 : 80;
-  const mediumThreshold = confidentThreshold ? 50 : 60;
-  
-  if (score >= highThreshold) {
-    return {
-      quality: 'High',
-      priority: 'hot',
-      recommendation: 'Immediate outreach recommended - high conversion probability'
-    };
-  } else if (score >= mediumThreshold) {
-    return {
-      quality: 'Medium',
-      priority: 'warm',
-      recommendation: 'Nurture with targeted content - good potential'
-    };
-  } else {
-    return {
-      quality: 'Low',
-      priority: 'cold',
-      recommendation: 'Long-term development - consider for future campaigns'
-    };
-  }
+export function classifyLeadQuality(score: number): 'High' | 'Medium' | 'Low' {
+  if (score >= 75) return 'High';
+  if (score >= 50) return 'Medium';
+  return 'Low';
 }

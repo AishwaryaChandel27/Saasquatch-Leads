@@ -48,248 +48,104 @@ export const INDUSTRY_CATEGORIES = {
 };
 
 // Location-based scoring weights (market maturity and tech adoption)
-export const LOCATION_WEIGHTS: Record<string, number> = {
-  // Tier 1 tech hubs
-  "San Francisco, CA": 10,
-  "Palo Alto, CA": 10,
-  "Mountain View, CA": 10,
-  "Seattle, WA": 9,
-  "New York, NY": 9,
-  "Boston, MA": 8,
-  "Austin, TX": 8,
-  "Los Angeles, CA": 7,
-  
-  // Tier 2 tech cities
-  "Denver, CO": 6,
-  "Chicago, IL": 6,
-  "Atlanta, GA": 6,
-  "Portland, OR": 6,
-  "Raleigh, NC": 5,
-  "Miami, FL": 5,
-  "Philadelphia, PA": 5,
-  "Washington, DC": 5,
-  
-  // International tech hubs
-  "London, UK": 8,
-  "Toronto, CA": 7,
-  "Amsterdam, NL": 7,
-  "Berlin, DE": 6,
-  "Tel Aviv, IL": 8,
-  "Singapore": 7,
-  "Sydney, AU": 6,
-  
-  // Default for other locations
-  "Other": 3
+export const LOCATION_WEIGHTS = {
+  "San Francisco, CA": 1.0,
+  "New York, NY": 0.95,
+  "Austin, TX": 0.9,
+  "Seattle, WA": 0.9,
+  "Boston, MA": 0.85,
+  "Los Angeles, CA": 0.8,
+  "Chicago, IL": 0.75,
+  "Denver, CO": 0.7,
+  "Atlanta, GA": 0.7,
+  "Other": 0.6
 };
 
-// Company size weights (based on employee count ranges)
-const COMPANY_SIZE_WEIGHTS: Record<string, number> = {
-  "1000+": 25,
-  "500-1000": 24,
-  "200-500": 22,
-  "50-200": 18,
-  "10-50": 12,
-  "1-10": 8,
+// Company size scoring
+export const COMPANY_SIZE_SCORES = {
+  "1-10": 5,
+  "11-50": 15,
+  "51-200": 25,
+  "201-500": 30,
+  "501-1000": 35,
+  "1001-5000": 40,
+  "5000+": 30
 };
 
-// Job title relevance weights
-const JOB_TITLE_WEIGHTS: Record<string, number> = {
-  "CEO": 25,
-  "CTO": 25,
-  "VP": 23,
+// Job title level scoring (decision making power)
+export const JOB_TITLE_SCORES = {
+  "C-Level": 30,
+  "VP": 25,
   "Director": 20,
-  "Head": 18,
   "Manager": 15,
-  "Lead": 12,
   "Senior": 10,
-  "Coordinator": 8,
-  "Specialist": 6,
+  "Mid-Level": 8,
+  "Junior": 5,
+  "Other": 10
 };
 
-// Engagement signal weights
-const ENGAGEMENT_WEIGHTS: Record<string, number> = {
-  "high": 25,
-  "medium": 18,
-  "low": 10,
-  "unknown": 5,
-};
-
-export function calculateLeadScore(lead: Lead): { score: number; breakdown: ScoringCriteria } {
-  // Company Size Score (0-25)
-  const companySizeScore = calculateCompanySizeScore(lead);
-
-  // Industry Match Score (0-25) 
-  const industryScore = INDUSTRY_CATEGORIES[lead.industry] || 8;
-
-  // Job Title Relevance Score (0-25)
-  const jobTitleScore = calculateJobTitleScore(lead.jobTitle);
-
-  // Engagement Signals Score (0-15)
-  const engagementScore = calculateEngagementScore(lead);
-
-  // Location/Market Score (0-10)
-  const locationScore = calculateLocationScore(lead.location);
-
-  // Funding Stage Score (0-10)
-  const fundingScore = calculateFundingScore(lead.fundingInfo);
-
-  const breakdown: ScoringCriteria = {
-    companySize: companySizeScore,
-    industry: industryScore,
-    jobTitle: jobTitleScore,
-    engagement: engagementScore,
-    funding: fundingScore
-  };
-
-  const totalScore = Math.min(100, Math.max(0, 
-    companySizeScore + industryScore + jobTitleScore + engagementScore + locationScore + fundingScore
-  ));
-
-  return { score: totalScore, breakdown };
+export function calculateLeadScore(lead: Lead): number {
+  let score = 0;
+  
+  // Industry scoring
+  const industryScore = INDUSTRY_CATEGORIES[lead.industry as keyof typeof INDUSTRY_CATEGORIES] || 8;
+  score += industryScore;
+  
+  // Company size scoring
+  const companySizeScore = COMPANY_SIZE_SCORES[lead.companySize as keyof typeof COMPANY_SIZE_SCORES] || 10;
+  score += companySizeScore;
+  
+  // Location scoring
+  const locationWeight = LOCATION_WEIGHTS[lead.location as keyof typeof LOCATION_WEIGHTS] || 0.6;
+  score *= locationWeight;
+  
+  // Job title scoring
+  const jobTitleScore = getJobTitleScore(lead.jobTitle || "");
+  score += jobTitleScore;
+  
+  // Additional factors
+  if (lead.website) score += 5;
+  if (lead.email) score += 5;
+  if (lead.aiInsights && lead.aiInsights.length > 0) score += 3;
+  
+  return Math.min(Math.round(score), 100);
 }
 
-function calculateCompanySizeScore(lead: Lead): number {
-  // Use actual employee count if available for more precise scoring
-  if (lead.employeeCount) {
-    if (lead.employeeCount >= 5000) return 25;
-    if (lead.employeeCount >= 1000) return 24;
-    if (lead.employeeCount >= 500) return 22;
-    if (lead.employeeCount >= 200) return 20;
-    if (lead.employeeCount >= 50) return 18;
-    if (lead.employeeCount >= 10) return 15;
-    return 10;
-  }
-  
-  // Fallback to company size string
-  return COMPANY_SIZE_WEIGHTS[lead.companySize] || 5;
-}
-
-function calculateLocationScore(location: string): number {
-  // Check for exact location matches
-  const exactMatch = LOCATION_WEIGHTS[location];
-  if (exactMatch) return exactMatch;
-  
-  // Check for city matches (case insensitive)
-  const locationLower = location.toLowerCase();
-  for (const [key, value] of Object.entries(LOCATION_WEIGHTS)) {
-    if (locationLower.includes(key.toLowerCase().split(',')[0])) {
-      return value;
-    }
-  }
-  
-  // Check for state/country matches
-  if (locationLower.includes('california') || locationLower.includes('ca')) return 8;
-  if (locationLower.includes('new york') || locationLower.includes('ny')) return 7;
-  if (locationLower.includes('washington') || locationLower.includes('wa')) return 7;
-  if (locationLower.includes('massachusetts') || locationLower.includes('ma')) return 6;
-  if (locationLower.includes('texas') || locationLower.includes('tx')) return 6;
-  
-  return 3; // Default for other locations
-}
-
-function calculateFundingScore(fundingInfo: string | null): number {
-  if (!fundingInfo) return 2;
-  
-  const funding = fundingInfo.toLowerCase();
-  
-  // High-growth funding stages
-  if (funding.includes('series c') || funding.includes('series d') || funding.includes('series e')) return 10;
-  if (funding.includes('series b')) return 9;
-  if (funding.includes('series a')) return 8;
-  if (funding.includes('seed')) return 6;
-  if (funding.includes('pre-seed')) return 4;
-  
-  // Public companies
-  if (funding.includes('public') || funding.includes('ipo') || funding.includes('nasdaq') || funding.includes('nyse')) return 7;
-  
-  // High valuation indicators
-  if (funding.includes('billion') || funding.includes('unicorn')) return 10;
-  if (funding.includes('million')) {
-    // Extract funding amount for more precise scoring
-    const match = funding.match(/(\d+).*million/);
-    if (match) {
-      const amount = parseInt(match[1]);
-      if (amount >= 100) return 9;
-      if (amount >= 50) return 8;
-      if (amount >= 10) return 6;
-      return 5;
-    }
-  }
-  
-  return 3; // Default for other funding stages
-}
-
-function calculateJobTitleScore(jobTitle: string): number {
+function getJobTitleScore(jobTitle: string): number {
   const title = jobTitle.toLowerCase();
   
-  // Check for exact matches first
-  for (const [keyword, weight] of Object.entries(JOB_TITLE_WEIGHTS)) {
-    if (title.includes(keyword.toLowerCase())) {
-      return weight;
-    }
+  if (title.includes('ceo') || title.includes('cto') || title.includes('cfo') || title.includes('founder')) {
+    return JOB_TITLE_SCORES["C-Level"];
   }
-
-  // Check for decision-maker keywords
-  const decisionMakerKeywords = ["chief", "president", "founder", "owner"];
-  for (const keyword of decisionMakerKeywords) {
-    if (title.includes(keyword)) {
-      return 25;
-    }
+  if (title.includes('vp') || title.includes('vice president')) {
+    return JOB_TITLE_SCORES["VP"];
   }
-
-  // Default score for other titles
-  return 8;
+  if (title.includes('director') || title.includes('head of')) {
+    return JOB_TITLE_SCORES["Director"];
+  }
+  if (title.includes('manager') || title.includes('lead')) {
+    return JOB_TITLE_SCORES["Manager"];
+  }
+  if (title.includes('senior') || title.includes('sr.')) {
+    return JOB_TITLE_SCORES["Senior"];
+  }
+  if (title.includes('junior') || title.includes('jr.') || title.includes('intern')) {
+    return JOB_TITLE_SCORES["Junior"];
+  }
+  
+  return JOB_TITLE_SCORES["Mid-Level"];
 }
 
-function calculateEngagementScore(lead: Lead): number {
-  let score = 0;
-
-  // Base score from buying intent
-  if (lead.buyingIntent) {
-    score += ENGAGEMENT_WEIGHTS[lead.buyingIntent] || 5;
-  }
-
-  // Bonus points for recent activity
-  if (lead.recentActivity) {
-    const activity = lead.recentActivity.toLowerCase();
-    if (activity.includes("demo") || activity.includes("trial")) {
-      score = Math.min(25, score + 8);
-    } else if (activity.includes("download") || activity.includes("whitepaper")) {
-      score = Math.min(25, score + 5);
-    } else if (activity.includes("webinar") || activity.includes("attended")) {
-      score = Math.min(25, score + 4);
-    } else if (activity.includes("visited") || activity.includes("pricing")) {
-      score = Math.min(25, score + 3);
-    }
-  }
-
-  // Bonus for tech stack compatibility
-  if (lead.techStack && lead.techStack.length > 0) {
-    score = Math.min(25, score + 2);
-  }
-
-  // Bonus for funding information (indicates growth/budget)
-  if (lead.fundingInfo) {
-    score = Math.min(25, score + 3);
-  }
-
-  return Math.min(25, score);
+export function updateLeadPriority(lead: Lead): "High" | "Medium" | "Low" {
+  const score = lead.score || calculateLeadScore(lead);
+  
+  if (score >= 80) return "High";
+  if (score >= 60) return "Medium";
+  return "Low";
 }
 
-export function updateLeadPriority(score: number): string {
-  if (score >= 80) return "hot";
-  if (score >= 60) return "warm";
-  return "cold";
-}
-
-export function enrichLeadData(lead: Lead): Lead {
-  const { score, breakdown } = calculateLeadScore(lead);
-  const priority = updateLeadPriority(score);
-
-  return {
-    ...lead,
-    score,
-    priority,
-    isEnriched: true,
-  };
+export function categorizeLeadQuality(score: number): "High" | "Medium" | "Low" {
+  if (score >= 80) return "High";
+  if (score >= 60) return "Medium";
+  return "Low";
 }

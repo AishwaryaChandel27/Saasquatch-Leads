@@ -1,6 +1,8 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = process.env.OPENAI_API_KEY 
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
 
 export interface CompanyAnalysisPrompt {
   companyName: string;
@@ -52,6 +54,10 @@ export interface AIAnalysisResult {
 }
 
 async function getChatJSONResponse(messages: any[], max_tokens = 1000) {
+  if (!openai) {
+    throw new Error("OpenAI API key not configured. Please provide OPENAI_API_KEY to use AI features.");
+  }
+  
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
     messages,
